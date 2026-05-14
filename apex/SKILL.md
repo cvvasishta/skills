@@ -1,5 +1,33 @@
-# Oracle APEX Skills
+---
+name: apex
+description: Oracle APEX skills for Oracle APEX application development.
+---
 
-This file is a sample domain skeleton.
+# APEXLang Skills
 
-For the repo-wide structure and authoring pattern, read the root `README.md` and `SKILL_AUTHORING_GUIDE.md`.
+This domain contains Oracle APEX skills for Oracle APEX application development.
+
+## How to Use This Domain
+
+1. Start with the routing table below.
+2. Read only the specific file or category you need.
+
+## Directory Structure
+
+```text
+apex/
+├── apexlang/
+```
+
+## Category Routing
+
+
+| Topic                                     | Directory       |
+| ----------------------------------------- | --------------- |
+| Generate APEX applications using APEXlang | `apex/apexlang` |
+
+
+## Key Starting Points
+
+- `apex/apexlang/references/workflows/apex-generation.md`
+- `apex/apexlang/references/domains/README.md`
