@@ -1,1062 +1,363 @@
-# ORDS Concert Sample App Bootstrap Skill
+# ORDS Concert Sample App Bootstrap
 
-## 1. Overview
+## Overview
 
-This skill helps customers and maintainers configure and validate the ORDS Concert sample app across identity provider setup, ORDS authorization, OCI Database API Gateway / OCS runtime configuration, and cloud metadata migration.
+Help configure, migrate, and validate the ORDS Concert sample app while preserving this required order:
 
-The modernized target architecture is:
+1. Configure Oracle IAM / OCI IAM and ORDS JWT validation first.
+2. Configure OCI Database API Gateway / OCS second, using `metadataSource:CLOUD`.
+3. Use Auth0 automation last, only as the legacy baseline or migration fallback.
 
-`Oracle IAM + ORDS JWT validation + OCI Database API Gateway / OCS + metadataSource:CLOUD`
+Default assumption for this skill: ORDS is external (OCI Database API Gateway / OCS or standalone ORDS config) and is **not installed in the target database**. In this mode, configure JWT validation at the **pool level** and do not require `ORDS_METADATA` in the database.
 
-Auth0 is retained only as a baseline setup path for reproducing original sample behavior, automation compatibility, or migration comparison.
+Produce reviewable plans, commands, configuration guidance, file-edit instructions, and validation steps. Do not invent tenant-specific values, secrets, OCIDs, URLs, domains, schemas, scopes, or customer-specific decisions.
 
-Use this skill to produce reviewable setup plans, commands, configuration guidance, and validation steps without inventing tenant-specific values.
+## Operating Rules
 
-## 2. Supported Modes
+- Use only repository files and user-provided context as the source of truth. Do not use web searches, connected tools, external data, or guessed tenant values.
+- Inspect existing repo files before proposing or applying edits. If a target file or path is missing, report it and continue with the available artifacts.
+- Ask only for missing values that block the next step. Otherwise, use explicit placeholders such as `<COMPARTMENT_OCID>` and mark them as missing.
+- Prefer reviewable commands over hidden automation. Separate explanation from commands and state what each command changes.
+- Use repo-relative paths for files and scripts.
+- Always include validation steps. Include negative validation whenever authentication or authorization is involved.
+- Never commit secrets, print tokens in documentation, expose client secrets in browser code, or store real credentials in sample files.
+- Apply least privilege where possible. Validate issuer, audience, JWKS URL, token expiration, scopes, and ORDS privilege mappings.
+- Keep Auth0 content limited to original setup reproduction, legacy automation, or comparison during migration to Oracle IAM.
+- When ORDS is not installed in the target database, do not require or generate database-side ORDS package calls for JWT profile setup. Configure JWT validation in the ORDS pool (`POOL` mode) through OCS or ORDS pool configuration.
+- If `ORDS_METADATA` and ORDS PL/SQL metadata definitions are unavailable, mark cloud metadata conversion from PL/SQL as `not applicable` for that environment and continue with pool-level JWT + IAM/OIDC validation.
 
-### auth0-baseline
+## Modes
 
-Use when the user wants to reproduce, automate, or validate the original Auth0-based setup.
-
-### oci-iam-target
-
-Use when the user wants to configure Oracle IAM / OCI IAM as the target identity provider.
-
-### ords-authorization
-
-Use when the user wants to configure JWT claim, scope for ORDS protected resources.
-
-### ocs-runtime-config
-
-Use when the user wants to configure ORDS using OCI Database API Gateway / OCS and start ORDS using a configuration OCID.
-
-### cloud-metadata-migration
-
-Use when the user wants to migrate ORDS PL/SQL definitions such as `ords.define_module`, `ords.define_template`, `ords.define_handler`, `ords.define_parameter`, or `ords.enable_object` into `ords_config_service/apispec.json` and `ords_config_service/oci_requests.sh`.
-
-### validate-bootstrap
-
-Use after setup to validate identity, JWT claims, ORDS authorization, OCS configuration, generated API specs, and endpoint behavior.
-
-## 3. Skill Behavior Contract
-
-Every response should include:
-
-1. Detected scenario
-2. Assumptions
-3. Required inputs
-4. Files to create or update
-5. Commands to run
-6. Validation checks
-7. Expected results
-8. Security warnings
-9. Troubleshooting notes
-10. Next recommended action
-
-Rules:
-
-- Do not invent missing configuration values.
-- Treat existing skill files in this repository as the only source of truth.
-- Do not use external data, web searches, connected tools, assumptions, or newly invented content.
-- Use placeholders for missing values.
-- Ask for missing required values only when they block the next step.
-- Prefer reviewable commands over hidden automation.
-- Separate explanation from commands.
-- Explain what each command changes.
-- Always include validation steps.
-- Always include negative validation checks when authentication or authorization is involved.
-
-## 4. Required Inputs
-
-### Common inputs
-
-- Local app URL
-- ORDS base URL
-- Target schema name
-- ORDS pool name
-- Authorization model: SBAC 
-- Environment: local, OCI, or other
-
-### Auth0 baseline inputs
-
-- Auth0 domain
-- Auth0 Management API client ID
-- Auth0 Management API client secret
-- API identifier
-- Callback URL
-- Logout URL
-- Required scopes
-- Test user
-- Test admin user
-
-### Oracle IAM target inputs
-
-- OCI IAM domain URL
-- OIDC client ID
-- OIDC client secret
-- Authorization endpoint
-- Token endpoint
-- Userinfo endpoint
-- JWKS URL
-- JWT issuer
-- JWT audience
-- Required scopes (SBAC)
-- Callback URL
-- Logout URL
-
-### ORDS authorization inputs
-
-- Protected endpoint paths
-- Required scopes
-- JWT profile name
-- Privilege names
-- Claim mapping strategy: scope-based 
-
-### OCS runtime configuration inputs
-
-- OCI region
-- Compartment OCID
-- Database API Gateway configuration OCID
-- Database Tools connection OCID
-- Pool key or pool name
-- DBTools endpoint
-- OCI CLI profile or authentication method
-- ORDS runtime startup command
-
-### Cloud metadata migration inputs
-
-- Source files containing ORDS PL/SQL definitions
-- Target `ords_config_service/apispec.json`
-- Target `ords_config_service/oci_requests.sh`
-- Pool key
-- API spec display name
-- Auto API Spec object list
-- Enabled schema or object names
-
-## 5. Output Format
-
-Use this template:
-
-### Detected Scenario
-
-State the selected mode.
-
-### Assumptions
-
-List assumptions explicitly.
-
-### Required Inputs
-
-| Input | Status | Notes |
+| Mode | Use for | Primary output |
 | --- | --- | --- |
-| `JWT_ISSUER` | provided / missing | Must match token `iss` |
-| `JWT_AUDIENCE` | provided / missing | Must match token `aud` |
-| `JWKS_URL` | provided / missing | Used by ORDS to validate JWT |
-| `CONFIG_OCID` | provided / missing | Used to start ORDS with OCS |
+| `ocs-runtime-config` | Configuring ORDS through OCI Database API Gateway / OCS and starting ORDS from a configuration OCID. | OCI/ORDS setup plan, commands, runtime validation, and troubleshooting. |
+| `cloud-metadata-migration` | Converting ORDS PL/SQL metadata definitions into OCS cloud metadata artifacts when those metadata sources exist. | `ords_config_service/apispec.json` and `ords_config_service/oci_requests.sh`, or a documented N/A decision when source metadata is unavailable. |
+| `oci-iam-target` | Configuring Oracle IAM / OCI IAM as the target OIDC identity provider. | IAM app settings, `.env` values, Remix auth edits, and OIDC validation. |
+| `ords-authorization` | Mapping JWT claims and scopes to ORDS protected resources. | Scope-to-privilege mapping, positive checks, and negative checks. |
+| `auth0-baseline` | Reproducing or validating the original Auth0 setup. | Auth0 Management API commands and baseline validation. |
+| `validate-bootstrap` | Validating identity, JWT, ORDS authorization, OCS configuration, API specs, and app behavior. | End-to-end checklist with expected results and failures. |
 
-### Files to Create or Update
+## Required Bootstrap Sequence
 
-List only files relevant to the detected scenario.
+1. Run `oci-iam-target` and `ords-authorization`, using pool-level JWT profile for external ORDS.
+2. Run `ocs-runtime-config` and `cloud-metadata-migration` with `metadataSource:CLOUD`.
+3. Run `auth0-baseline` only as a legacy fallback or migration comparison.
+4. Run `validate-bootstrap`, including app startup with `npm run dev`.
 
-Examples:
+## Required Inputs
 
-- `.env.example`
-- `app/utils/auth.server.ts`
-- `app/routes/callback.tsx`
-- `app/routes/login.tsx`
-- `app/routes/logout.tsx`
-- `app/routes/constants/index.server.ts`
-- `ords_config_service/apispec.json`
-- `ords_config_service/oci_requests.sh`
+Track provided and missing values in responses.
 
-### Commands
-
-Provide commands in execution order.
-
-### Validation
-
-Include positive checks and negative checks.
-
-Positive checks:
-
-- Login succeeds.
-- Access token contains expected issuer.
-- Access token contains expected audience.
-- Access token contains expected scope.
-- Public endpoint works.
-- Protected user endpoint works for authenticated user.
-- Admin endpoint works for admin user.
-- ORDS starts using the OCS configuration OCID.
-- Generated API spec is valid JSON.
-
-Negative checks:
-
-- Request without token fails.
-- Request with expired token fails.
-- Request with wrong audience fails.
-- Request with missing scope fails.
-- Non-admin user cannot access admin endpoint.
-- Wrong OCS config OCID fails clearly.
-- Wrong pool key fails clearly.
-
-### Expected Results
-
-Explain what success looks like.
-
-### Troubleshooting
-
-Include likely causes and fixes.
-
-### Security Notes
-
-Warn about:
-
-- Not committing secrets
-- Not printing tokens in documentation
-- Using least privilege
-- Validating issuer, audience, JWKS URL, and scopes 
-- Separating sample placeholders from real customer values
-
-### Next Recommended Action
-
-Give one clear next step.
-
-## 6. Auth0 Baseline Setup
-
-This section is the **Auth0 baseline flow**.
-
-Use when you need to reproduce the original setup behavior, run legacy automation, or compare migration changes against Oracle IAM target behavior.
-
-### Required Auth0 values
-
-- `AUTH0_DOMAIN`
-- Auth0 Management API app `CLIENT_ID` / `CLIENT_SECRET`
-- `API_IDENTIFIER`
-- callback URL
-- logout URL
-- required scopes
-
-### Auth0 API and application setup
-
-#### Auth0 Management API Upsert Rules (Important)
-
-When making setup scripts rerunnable, apply these rules:
-
-- `POST /api/v2/resource-servers` may include `identifier`.
-- `PATCH /api/v2/resource-servers/{id}` must **not** include `identifier` (immutable field).
-- A `400 invalid_body` with message similar to `Additional properties not allowed: identifier` means your PATCH payload includes immutable fields.
-
-#### 1. Export automation app credentials
-
-The automation app is a **Machine to Machine Application** authorized for Auth0 Management API scopes.
-
-In Auth0:
-
-1. Go to **Applications -> Applications**
-2. Click **Create Application**
-3. Name it something like `Management_App`
-4. Choose **Machine to Machine Applications**
-5. Authorize it for the **Auth0 Management API**
-6. Grant only the scopes required by the automation
-
-Recommended scopes:
-
-- `create:resource_servers`
-- `read:resource_servers`
-- `update:resource_servers`
-- `create:clients`
-- `read:clients`
-- `update:clients`
-- `create:client_grants`
-- `read:client_grants`
-- `update:client_grants`
-- `delete:client_grants`
-
-After that, note the following values from the application:
-
-```bash
-export AUTH0_DOMAIN="your-tenant.us.auth0.com"
-export CLIENT_ID="your_management_app_client_id"
-export CLIENT_SECRET="your_management_app_client_secret"
-```
-
-#### 2. Obtain Management API access token
-
-```bash
-ACCESS_TOKEN=$(
-  curl -s --request POST \
-    --url "https://$AUTH0_DOMAIN/oauth/token" \
-    --header "content-type: application/json" \
-    --data "{
-      \"client_id\": \"$CLIENT_ID\",
-      \"client_secret\": \"$CLIENT_SECRET\",
-      \"audience\": \"https://$AUTH0_DOMAIN/api/v2/\",
-      \"grant_type\": \"client_credentials\"
-    }" | jq -r '.access_token'
-)
-```
-
-#### 3. Create the Auth0 API (resource server)
-
-```bash
-API_IDENTIFIER="https://concert.sample.app"
-API_NAME="ORDS Concert API"
-
-RESOURCE_SCOPES='[
-  {"value":"read:general_user_content","description":"Read all of the general user endpoints"},
-  {"value":"concert_app_authuser","description":"Provides access to the user specific endpoints"},
-  {"value":"concert_app_admin","description":"Provides access to the concert app admin endpoints"}
-]'
-```
-
-#Find existing resource server by identifier
-```bash
-RS_LIST=$(
-  curl -s --request GET \
-    --url "https://$AUTH0_DOMAIN/api/v2/resource-servers?per_page=100" \
-    --header "authorization: Bearer $ACCESS_TOKEN"
-)
-
-RS_ID=$(printf '%s' "$RS_LIST" | jq -r --arg idf "$API_IDENTIFIER" '.[] | select(.identifier==$idf) | .id' | head -n1)
-```
-
-#Create payload (identifier allowed)
-```bash
-CREATE_PAYLOAD=$(
-  jq -cn --arg name "$API_NAME" --arg identifier "$API_IDENTIFIER" --argjson scopes "$RESOURCE_SCOPES" '{
-    name: $name,
-    identifier: $identifier,
-    signing_alg: "RS256",
-    scopes: $scopes,
-    subject_type_authorization: {
-      user: { policy: "require_client_grant" },
-      client: { policy: "deny_all" }
-    }
-  }'
-)
-```
-
-#Update payload (identifier NOT allowed)
-```bash
-UPDATE_PAYLOAD=$(
-  jq -cn --arg name "$API_NAME" --argjson scopes "$RESOURCE_SCOPES" '{
-    name: $name,
-    signing_alg: "RS256",
-    scopes: $scopes,
-    subject_type_authorization: {
-      user: { policy: "require_client_grant" },
-      client: { policy: "deny_all" }
-    }
-  }'
-)
-
-if [ -z "$RS_ID" ]; then
-  API_RESPONSE=$(
-    curl -s --request POST \
-      --url "https://$AUTH0_DOMAIN/api/v2/resource-servers" \
-      --header "authorization: Bearer $ACCESS_TOKEN" \
-      --header "content-type: application/json" \
-      --data "$CREATE_PAYLOAD"
-  )
-else
-  API_RESPONSE=$(
-    curl -s --request PATCH \
-      --url "https://$AUTH0_DOMAIN/api/v2/resource-servers/$RS_ID" \
-      --header "authorization: Bearer $ACCESS_TOKEN" \
-      --header "content-type: application/json" \
-      --data "$UPDATE_PAYLOAD"
-  )
-fi
-
-API_ID=$(printf '%s' "$API_RESPONSE" | jq -r '.id')
-API_IDENTIFIER=$(printf '%s' "$API_RESPONSE" | jq -r '.identifier')
-```
-
-#### 4. Create the sample app client (Regular Web Application)
-
-```bash
-APP_RESPONSE=$(
-  curl --silent --show-error --fail \
-    --request POST \
-    --url "https://${AUTH0_DOMAIN}/api/v2/clients" \
-    --header "authorization: Bearer ${ACCESS_TOKEN}" \
-    --header "content-type: application/json" \
-    --data '{
-      "name": "ORDS Remix JWT Sample",
-      "app_type": "regular_web",
-      "grant_types": ["authorization_code"],
-      "callbacks": ["http://localhost:3000/callback"],
-      "allowed_logout_urls": ["http://localhost:3000"],
-      "web_origins": ["http://localhost:3000"]
-    }'
-)
-
-APP_CLIENT_ID=$(printf '%s' "$APP_RESPONSE" | jq -r '.client_id')
-APP_CLIENT_SECRET=$(printf '%s' "$APP_RESPONSE" | jq -r '.client_secret')
-```
-
-#### 5. Authorize app to call API (client grant)
-
-```bash
-CLIENT_GRANT_RESPONSE=$(
-  curl -s --request POST \
-    --url "https://$AUTH0_DOMAIN/api/v2/client-grants" \
-    --header "authorization: Bearer $ACCESS_TOKEN" \
-    --header "content-type: application/json" \
-    --data "{
-      \"client_id\": \"$APP_CLIENT_ID\",
-      \"audience\": \"$API_IDENTIFIER\",
-      \"scope\": [
-        \"read:general_user_content\",
-        \"concert_app_authuser\",
-        \"concert_app_admin\"
-      ],
-      \"subject_type\": \"user\"
-    }"
-)
-```
-
-#### 6. Generate sample app environment values
-
-```bash
-cat <<EOF
-AUTH0_DOMAIN=$AUTH0_DOMAIN
-AUTH0_LOGOUT_URL=https://$AUTH0_DOMAIN/v2/logout
-JWT_ISSUER=https://$AUTH0_DOMAIN/
-AUTH0_CLIENT_ID=$APP_CLIENT_ID
-AUTH0_CLIENT_SECRET=$APP_CLIENT_SECRET
-AUTH0_RETURN_TO_URL=http://localhost:3000
-AUTH0_CALLBACK_URL=http://localhost:3000/callback
-JWT_AUDIENCE=$API_IDENTIFIER
-JWT_VERIFICATION_KEY=https://$AUTH0_DOMAIN/.well-known/jwks.json
-EOF
-```
-
-### Validation commands
-
-```bash
-npm run drop
-npm run migrate
-npm run seed
-npm run dev
-```
-
-### Common Auth0 errors
-
-- `400 invalid_body` during API update because `identifier` was included in PATCH payload.
-- Login callback mismatch because callback URL does not match Auth0 app configuration.
-- Missing scopes in issued token because client grant does not include required scopes.
-
-## 7. Oracle IAM Target Setup
-
-This section is the **Oracle IAM target flow**.
-
-Use when migrating to the modernized target architecture.
-
-The Oracle IAM authorization model uses Scope-Based Access Control.
-
-### OCI IAM confidential application setup and endpoints
-
-#### 1. Create or select the Identity Domain
-
-In OCI IAM, create or select the target Identity Domain for the ORDS Concert sample app.
-
-Then create one confidential application:
-
-- `ords-sample-app`
-
-This application is used as both:
-
-- the OAuth/OIDC client for the Remix sample app
-- the resource server definition that exposes the ORDS Concert API scopes
-
-#### 2. Configure `ords-sample-app`
-
-##### Service Configuration
-
-Configure the service/resource side of the application.
-
-Use the following values:
-
-| Setting | Value |
+| Area | Inputs |
 | --- | --- |
-| Access token expiration | `3600` seconds |
-| Primary audience | `ords/sample-app/` |
-| Supported scopes | `concert_app_authuser`, `concert_app_admin` |
+| Common | Local app URL, ORDS base URL, schema, ORDS pool, SBAC authorization model, environment. |
+| OCS runtime | OCI region, compartment/config/Database Tools connection OCIDs, pool key/name, OCI auth/profile, startup command. |
+| Cloud migration | Source `.sql` ORDS PL/SQL definitions, target `apispec.json`, target `oci_requests.sh`, pool key, display name, auto API object list, enabled schema/object names. |
+| Oracle IAM target | OIDC client ID/secret, authorization/token/userinfo/JWKS endpoints, issuer, audience, scopes, callback/logout URLs. |
+| ORDS authorization | Protected paths, scopes, JWT profile mode (`POOL` for external ORDS), privileges, scope-based claim mapping. |
+| Auth0 baseline | Domain, Management API client ID/secret, API identifier, callback/logout URLs, scopes, test user/admin. |
 
-Define these scopes:
+## Response Contract
 
-| Scope | Purpose |
-| --- | --- |
-| `concert_app_authuser` | Allows access to authenticated-user ORDS endpoints |
-| `concert_app_admin` | Allows access to admin-only ORDS endpoints |
+Use these headings for skill responses and scope each section to the detected mode:
 
+1. Detected Scenario
+2. Assumptions
+3. Required Inputs, with provided/missing status
+4. Files to Create or Update
+5. Commands, in execution order
+6. Validation, with positive and negative checks
+7. Expected Results
+8. Troubleshooting
+9. Security Notes
+10. Next Recommended Action
 
-##### Client Configuration
+Relevant files may include `.env.example`, Remix auth files, Remix route files, constants, profile model files, `ords_config_service/apispec.json`, and `ords_config_service/oci_requests.sh`.
 
-Configure the client side of the application.
+## Command and File-Edit Standards
 
-Use the following values:
+- Explain what each command changes before or immediately after the command block.
+- Keep generated commands rerunnable when possible.
+- Use fenced code blocks with language labels.
+- Keep secrets as environment variables or placeholders, never literal values.
+- Do not write tenant-specific values into examples.
+- For file edits, name the repo-relative path and describe the intended change before showing code.
 
-| Setting | Value |
-| --- | --- |
-| Client type | `Confidential` |
-| Allowed grant type | `Authorization code` |
-| Redirect URL | `http://localhost:3000/callback` |
-| Optional testing redirect | `https://insomnia.rest` |
-| Optional testing redirect | `https://oauth.pstmn.io/v1/callback` |
-| Token issuance policy | `Specific` |
-| Allowed resource scopes | `concert_app_authuser`, `concert_app_admin` |
-
-Under **Resources**, add the ORDS Concert API resource and allow the following scopes:
-
-- `concert_app_authuser`
-- `concert_app_admin`
-
-The Remix server must keep the client secret server-side. Do not expose the client secret in browser code, documentation, screenshots, or committed files.
-
-#### 3. Configure SBAC scope mapping
-
-Use Scope-Based Access Control as the default Oracle IAM authorization model.
-
-The ORDS Concert sample app should map IAM/OIDC scopes to ORDS privileges:
-
-| OCI IAM Scope | ORDS Mapping |
-| --- | --- |
-| `concert_app_authuser` | ORDS authenticated-user privilege |
-| `concert_app_admin` | ORDS admin privilege |
-
-
-### Environment variables and credential handling
-
-```env
-# We refer to some variables as Autonomous Database specific
-# but you can use whichever ORDS URL you want/have as well as the user,
-# as long as this user is capable of creating and REST Enabling other schemas.
-ADB_ORDS_URL=http://localhost:8080/ords/pool_name/
-ADB_ADMIN_USER=admin
-ADB_ADMIN_PASSWORD=ADMIN_PASSWORD
-
-# The name of the schema that will be created to host all of the
-# ORDS Concert App database objects.
-SCHEMA_NAME=ORDS_CONCERT_APP
-SCHEMA_PASSWORD=YOUR_PASSWORD
-
-# OCI IAM JWT credentials, used by ORDS to validate request to protected endpoints.
-JWT_ISSUER=https://identity.oraclecloud.com/
-JWT_VERIFICATION_KEY=https://<domain-url>:443/admin/v1/SigningCert/jwk
-JWT_AUDIENCE=ords/sample-app/
-
-# OCI IAM OIDC application configuration parameters specific to the sample app.
-OIDC_RETURN_TO_URL=http://localhost:3000
-OIDC_REDIRECT_URI=http://localhost:3000/callback
-OIDC_CLIENT_ID=<CLIENT_ID>
-OIDC_CLIENT_SECRET=<CLIENT_SECRET>
-OIDC_AUTHORIZATION_ENDPOINT=https://<domain-url>:443/oauth2/v1/authorize
-OIDC_TOKEN_ENDPOINT=https://<domain-url>:443/oauth2/v1/token
-OIDC_USERINFO_ENDPOINT=https://<domain-url>:443/oauth2/v1/userinfo
-OIDC_SCOPES=openid,email,profile,ords/sample-app/concert_app_authuser,ords/sample-app/concert_app_admin
-```
-
-> ⚠️ Unverified: validate exact scope names/format in your tenant before production rollout.
-
-### Remix app changes for Oracle IAM target
-
-Apply these updates in the sample app after setting OCI IAM `.env` values.
-
-#### 1. Required packages
-
-```bash
-npm install remix-auth@3.7.0 remix-auth-oauth2@1.10.0
-```
-
-#### 2. Auth strategy migration (`app/utils/auth.server.ts`)
-
-Use `OAuth2Strategy` and switch app auth flow key to `oidc`.
-
-```ts
-import { createFileSessionStorage } from '@remix-run/node';
-import { Authenticator } from 'remix-auth';
-import { OAuth2Strategy } from 'remix-auth-oauth2';
-import {
-  COOKIE_MAX_AGE,
-  OIDC_AUTHORIZATION_ENDPOINT,
-  OIDC_AUDIENCE,
-  OIDC_CLIENT_ID,
-  OIDC_CLIENT_SECRET,
-  OIDC_REDIRECT_URI,
-  OIDC_SCOPES,
-  OIDC_TOKEN_ENDPOINT,
-  OIDC_USERINFO_ENDPOINT,
-} from '~/routes/constants/index.server';
-import type { OIDCProfile } from '~/models/OIDCProfile';
-```
-
-#### 3. Session storage fix (`app/utils/auth.server.ts`)
-
-Use server-side session storage to avoid cookie overflow when token payloads are large.
-
-```ts
-const sessionStorage = createFileSessionStorage({
-  dir: '/tmp/remix-sessions',
-  cookie: {
-    name: '_remix_session',
-    sameSite: 'lax',
-    path: '/',
-    httpOnly: true,
-    secrets: ['foobar'],
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: COOKIE_MAX_AGE,
-  },
-});
-```
-
-#### 4. Login route (`app/routes/oidc.tsx`)
-
-```ts
-import type { ActionFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
-import { auth } from '~/utils/auth.server';
-
-export const loader = async () => redirect('/');
-export const action = async ({ request }: ActionFunctionArgs) =>
-  auth.authenticate('oidc', request);
-```
-
-#### 5. Callback route (for example `app/routes/callback.tsx`)
-
-```ts
-export const loader = async ({ request }: LoaderFunctionArgs) =>
-  auth.authenticate('oidc', request, {
-    successRedirect: '/private/profile',
-    failureRedirect: '/error',
-  });
-```
-
-#### 6. OIDC constants (`app/routes/constants/index.server.ts`)
-
-```ts
-export const OIDC_RETURN_TO_URL = process.env.OIDC_RETURN_TO_URL || 'http://localhost:3000';
-export const OIDC_REDIRECT_URI = process.env.OIDC_REDIRECT_URI!;
-export const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID!;
-export const OIDC_CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET!;
-export const OIDC_AUTHORIZATION_ENDPOINT = process.env.OIDC_AUTHORIZATION_ENDPOINT!;
-export const OIDC_TOKEN_ENDPOINT = process.env.OIDC_TOKEN_ENDPOINT!;
-export const OIDC_USERINFO_ENDPOINT = process.env.OIDC_USERINFO_ENDPOINT!;
-export const OIDC_LOGOUT_ENDPOINT = process.env.OIDC_LOGOUT_ENDPOINT || '';
-export const OIDC_AUDIENCE = process.env.OIDC_AUDIENCE || '';
-```
-
-#### 7. Provider-neutral profile model (`app/models/OIDCProfile.ts`)
-
-```ts
-import type { OAuth2Profile } from 'remix-auth-oauth2';
-
-export interface OIDCProfile extends OAuth2Profile {
-  id: string;
-  displayName: string;
-  emails: Array<{ value: string; type?: string }>;
-  photos: Array<{ value: string }>;
-  _json?: {
-    nickname?: string;
-    [key: string]: unknown;
-  };
-}
-```
+---
 
-#### 8. Update login form actions to `/oidc`
-
-- `app/components/navbar/NavBar.tsx`
-- `app/components/error/ErrorPage.tsx`
-- `app/components/artists/HeroBanner.tsx`
-- `app/components/concerts/ConcertBanner.tsx`
-
-```tsx
-<Form method="post" action="/oidc">
-```
+# OCI Database API Gateway / OCS Runtime Configuration
 
-#### 9. Logout route OIDC constants import
+Run this second, after Oracle IAM target setup and ORDS authorization mapping.
 
-```ts
-import {
-  OIDC_CLIENT_ID,
-  OIDC_LOGOUT_ENDPOINT,
-  OIDC_RETURN_TO_URL,
-} from '~/routes/constants/index.server';
-```
+This runtime flow assumes ORDS is external to the database. Do not require `ORDS_METADATA` in the target schema/database for JWT profile configuration.
 
-### ORDS JWT validation requirements
+## Start Conditions
 
-- `JWT_ISSUER` must match token `iss`.
-- `JWT_AUDIENCE` must match token `aud`.
-- `JWT_VERIFICATION_KEY` (JWKS URL) must be reachable by ORDS.
-- Required scopes must be present in access token for SBAC.
+1. Create an OCI Base Database instance for the sample app workload.
+2. Confirm database connectivity details: `host`, `port`, and `service_name`.
+3. Confirm admin or schema credentials are available.
+4. Confirm ORDS is not installed on this database.
+5. If ORDS is already installed, use a different Base Database with no ORDS installation for this flow.
 
-### Validation commands
+## Setup Path
 
-```bash
-npm run drop
-npm run migrate
-npm run seed
-npm run dev
-```
+1. Create a compartment.
+2. Create a VCN/subnet and required ingress, such as TCP `1521` and `8088`.
+3. Provision the Base Database for the sample app.
+4. Prepare ORDS runtime host access.
+5. Verify Java 17 or later.
+6. Create the Database Tools connection.
+7. Create the Database API Gateway config with cloud metadata.
+8. Create pools mapped to Database Tools connections.
+9. Start ORDS with the configuration OCID.
 
-### Common IAM/OIDC errors
+Database lifecycle admin user creation belongs in database setup and validation, not in this OCS runtime flow.
 
-- Wrong authorization/token endpoint values.
-- Wrong `OIDC_CLIENT_ID` or `OIDC_CLIENT_SECRET`.
-- Callback URL mismatch with confidential application redirect URI.
 
-## 8. ORDS Authorization Mapping
+## ORDS Runtime and OCI Resource Commands
 
-Use this section for **ORDS authorization** design and validation.
-
-### Scope-based access control (SBAC)
-
-This is the default and recommended model for Oracle IAM target setup in this skill.
-
-Use JWT scopes such as:
-
-- `concert_app_authuser`
-- `concert_app_admin`
-
-A user with only `concert_app_authuser` should be unauthorized for admin endpoints.
-
-
-### Claim mapping strategy guidance
-
-- `scope-based`: default path; use token scopes for privilege checks.
-
-
-### Example expected JWT payload
-
-```json
-{
-  "iss": "<JWT_ISSUER>",
-  "aud": "<JWT_AUDIENCE>",
-  "exp": 1735689600,
-  "scope": "concert_app_authuser"
-}
-```
-
-### Positive and negative tests
-
-- Normal authenticated user: user endpoint allowed; admin endpoint denied.
-- Admin user: admin endpoint allowed.
-- User without required scope: denied.
-- Token with wrong audience: denied.
-- Token with wrong issuer: denied.
-
-## 9. OCI Database API Gateway / OCS Runtime Configuration
-
-This is the target ORDS runtime configuration model for the modernized sample app.
-
-Use this section when ORDS should load runtime configuration from OCI Database API Gateway / OCS instead of local static config.
-
-### Purpose
-
-- Centralize ORDS runtime configuration in OCI.
-- Map ORDS pools to OCI Database Tools connections.
-- Run ORDS using a configuration OCID.
-- Support `metadataSource: CLOUD` for cloud-managed API metadata.
-
-### Required OCI values
-
-- OCI region
-- compartment OCID
-- config OCID
-- Database Tools connection OCID
-- pool key / pool name
-- DBTools endpoint
-
-### 1. Create a compartment
-
-- Use `us-phoenix-1` and the beta endpoint: `https://dbtools.us-phoenix-1.oci.oraclecloud.com`.
-- Create a non-production compartment and save its OCID as `<COMPARTMENT_OCID>`.
-
-### 2. Create VCN and subnet rules
-
-- Create a VCN with internet connectivity.
-- In the public subnet/security list, add ingress needed for your flow:
-  - DB access port, for example TCP `1521`
-  - ORDS HTTP test port, for example TCP `8088`
-
-### 3. Create VM and install ORDS
-
-- Launch a compute instance in `us-phoenix-1` in that VCN/subnet.
-- Install ORDS and verify Java `17+`.
-
-Example install path:
+Install ORDS on the runtime host when needed:
 
 ```bash
 sudo yum install ords
 ```
 
-If your YUM image does not include required dbtools fixes, use a newer ORDS build.
-
-### 4. Create a dynamic group for the instance
-
-Use a matching rule for your VM OCID:
+Create a dynamic group for the instance:
 
 ```text
 All {instance.id = '<INSTANCE_OCID>'}
 ```
 
-Save the dynamic group name as `<DYNAMIC_GROUP_NAME>`.
-
-### 5. Create IAM policy for the dynamic group (least privilege)
-
-Current beta guidance may temporarily require broader policy scope:
+Use the least-privilege policy your environment supports. If using the sample broad bootstrap policy, call it out as temporary and narrow it before production:
 
 ```text
 Allow dynamic-group <DYNAMIC_GROUP_NAME> to manage all-resources in compartment id <COMPARTMENT_OCID>
 ```
 
-When finer-grained verbs are available, tighten this policy immediately to only required Database Tools permissions.
-
-### 6. Create Database Tools connection to local Base DB
-
-Create a Database Tools connection that points to your Base DB local listener.
-
-- Local connection string example from config steps: `:1540/FREEPDB1`
-- This shorthand behaves like a local connection on that host.
-
-CLI skeleton:
+Create a Database Tools connection using the schema credentials created by the migration script. Use connection string format `<host>:<port>/<service_name>`.
 
 ```bash
 oci dbtools connection create-oracle-database \
   --compartment-id <COMPARTMENT_OCID> \
-  --endpoint https://dbtools.us-phoenix-1.oci.oraclecloud.com \
-  --display-name BASE_DB_LOCAL \
-  --user-name <db_user> \
-  --user-password-secret-id <vault-secret-ocid>
+  --display-name ORDS_SAMPLE_APP_CONN \
+  --user-name <DB_USER> \
+  --user-password-secret-id <VAULT_SECRET_OCID> \
+  --connection-string "<HOST>:<PORT>/<SERVICE_NAME>"
 ```
 
-Record the resulting Database Tools connection OCID as `<DBTOOLS_CONNECTION_OCID>`.
-
-### 7. Create Database API Gateway Config
-
-Choose metadata mode:
-
-- `DATABASE`: metadata resolved from ORDS metadata in DB.
-- `CLOUD`: metadata managed in the config service (`apiSpecs` / `autoApiSpecs`).
+Create a Database API Gateway config. Use cloud metadata for config-service-managed `apiSpecs` and `autoApiSpecs`.
 
 ```bash
-DBTOOLS_ENDPOINT="https://dbtools.us-phoenix-1.oci.oraclecloud.com"
-COMPARTMENT_OCID="<your-compartment-ocid>"
-
-oci raw-request --http-method POST \
-  --target-uri "$DBTOOLS_ENDPOINT/20201005/databaseToolsDatabaseApiGatewayConfigs" \
-  --request-body '{
-    "type": "DEFAULT",
-    "displayName": "ORDS DEMO CONFIG",
-    "metadataSource": "CLOUD",
-    "compartmentId": "'"$COMPARTMENT_OCID"'"
-  }' \
-  --profile DEFAULT
+oci dbtools database-api-gateway-config create-database-api-gateway-config-default \
+  --compartment-id <COMPARTMENT_OCID> \
+  --display-name ords-sample-app-config \
+  --metadata-source CLOUD
 ```
 
 Retrieve and export the config OCID:
 
 ```bash
-export CONFIG_OCID="<your-config-ocid>"
-oci raw-request --http-method GET \
-  --target-uri "$DBTOOLS_ENDPOINT/20201005/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID" \
-  --profile DEFAULT
+export CONFIG_OCID="<CONFIG_OCID>"
+oci dbtools database-api-gateway-config get \
+  --database-api-gateway-config-id "$CONFIG_OCID"
 ```
 
-### 8. Update global settings
+Update global settings:
 
 ```bash
-oci raw-request --http-method PUT \
-  --target-uri "$DBTOOLS_ENDPOINT/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/globals/SETTINGS" \
-  --request-body '{
-    "type": "DEFAULT",
-    "poolRoute": "PATH",
-    "databaseApiStatus": "ENABLED",
-    "httpPort": 8088,
-    "httpsPort": 0,
-    "documentRoot": "/var/www/html",
-    "advancedProperties": {
-      "cache.metadata.enabled": "true"
-    }
-  }' \
-  --profile DEFAULT
+oci dbtools-runtime database-api-gateway-config-global update default \
+  --database-api-gateway-config-id "$CONFIG_OCID" \
+  --global-key SETTINGS \
+  --pool-route PATH \
+  --http-port 8088 \
+  --https-port 0 
+
 ```
 
-### 9. Create pools mapped to Database Tools connections
+Create pools mapped to Database Tools connections:
 
 ```bash
-DBTOOLS_CONNECTION_OCID="<DBTOOLS_CONNECTION_OCID>"
-
-oci raw-request --http-method POST \
-  --target-uri "$DBTOOLS_ENDPOINT/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools" \
-  --request-body '{
-    "type": "DEFAULT",
-    "mapping": "ords-pool",
-    "displayName": "BASE_DB pool in dev Environment",
-    "databaseToolsConnectionId": "'"$DBTOOLS_CONNECTION_OCID"'",
-    "maxPoolSize": 100,
-    "minPoolSize": 20,
-    "initialPoolSize": 20,
-    "jwtProfileJwkUrl": "<your-jwt-profile-url>",
-    "jwtProfileIssuer": "<your-jwt-profile-issuer>",
-    "jwtProfileAudience": "<your-jwt-profile-audience>",
-    "restEnabledSqlStatus": "ENABLED"
-  }' \
-  --profile DEFAULT
+oci dbtools-runtime database-api-gateway-config-pool create default \
+  --database-api-gateway-config-id "$CONFIG_OCID" \
+  --display-name ords_sample_app_pool \
+  --pool-route-value base_db \
+  --database-tools-connection-id <DBTOOLS_CONNECTION_OCID> \
+  --min-pool-size 1 \
+  --initial-pool-size 1 \
+  --max-pool-size 10 \
+  --rest-enabled-sql-status ENABLED \
+  --jwt-profile-jwk-url "<JWT_PROFILE_JWK_URL>" \
+  --jwt-profile-issuer "<JWT_PROFILE_ISSUER>" \
+  --jwt-profile-audience "<JWT_PROFILE_AUDIENCE>"
 ```
 
-### Starting ORDS with configuration OCID
+Start ORDS with the configuration OCID:
 
 ```bash
-./ords --java-options "-Dconfig.url=https://dbtools.us-phoenix-1.oci.oraclecloud.com" \
-  serve --ocid "$CONFIG_OCID"
+./ords serve --ocid "$CONFIG_OCID"
 ```
 
-You can also use:
+If not running on OCI Compute and using a local OCI profile instead:
 
 ```bash
-./ords --java-options "-Dconfig.url=https://dbtools.us-phoenix-1.oci.oraclecloud.com -Doci.profile=DEFAULT" \
-  serve --ocid "$CONFIG_OCID"
+./ords --java-options "-Doci.profile=DEFAULT" serve --ocid "$CONFIG_OCID"
 ```
 
-### Runtime validation checks
+## Required `.env` Values for OCS and Database Bootstrap
+
+```env
+# ORDS base URL for your Base Database or ORDS instance.
+# Replace <VM-PUBLIC-IP>, <VM-PORT>, and <POOL_NAME> with actual values.
+# Keep the trailing slash.
+BD_ORDS_URL=http://<VM-PUBLIC-IP>:<VM-PORT>/ords/<POOL_NAME>
+
+# Oracle Database connect string used by migrate/seed/drop scripts.
+# Examples:
+#   host:1521/service_name
+#   myadb_high, from tnsnames.ora when TNS_ADMIN is configured
+BD_CONNECT_STRING=<HOST>:<PORT>/<SERVICE_NAME>
+
+# Oracle Instant Client directory for Thick mode in node-oracledb.
+ORACLE_CLIENT_LIB_DIR=<path>/instantclient_23_26
+
+# Database admin user for schema create/migrate/seed/drop.
+BD_ADMIN_USER=BD_admin
+BD_ADMIN_PASSWORD=
+
+# Schema that hosts ORDS Concert App objects.
+SCHEMA_NAME=ORDS_CONCERT_APP
+SCHEMA_PASSWORD=
+```
+
+
+## OCS Runtime Validation
 
 ```bash
-curl -i -u HR:'<hr-password>' http://<compute-host>:8088/ords/ords-pool/api/dev/pets
+curl -i http://<COMPUTE_HOST>:8088/ords/base_db/
 ```
 
-### Troubleshooting pointers
+Expected result: the ORDS pool route responds from the OCS-backed configuration.
 
-- Wrong configuration OCID causes startup or fetch failure.
-- Wrong pool key or mapping causes route resolution failure.
-- Missing dynamic group/policy prevents config retrieval.
-- Missing Database Tools connection OCID causes pool creation failure.
+## OCS Troubleshooting
 
-## 10. Cloud Metadata Migration
+| Symptom | Check |
+| --- | --- |
+| `401` or `403` with JWT | Confirm JWK URL reachability, exact issuer/audience match, token expiration, scopes, and clock skew. |
+| `404` for path | Confirm pool mapping type is `PATH` and the path segment matches the pool route value. |
+| Connection failures | Verify security lists/NSGs, route tables, listener reachability, and Database Tools connection test results. |
+| OCI auth failures | Confirm the dynamic group rule matches the instance OCID and the policy applies to the config compartment. |
+| Large JSON or shell quoting errors | Use `--from-json file://...` or `jq` to avoid shell quoting mistakes. |
 
-Use this section for **cloud metadata migration** from ORDS PL/SQL definitions to cloud-managed artifacts.
+---
 
-### Migration target artifacts
+# Cloud Metadata Migration
+
+Use only `.sql` ORDS PL/SQL metadata definitions to generate both required artifacts:
 
 - `ords_config_service/apispec.json`
 - `ords_config_service/oci_requests.sh`
 
-### Scope
+The shell file must contain only OCI raw-request commands: one `apiSpecs` create request first, followed by one `autoApiSpecs` request per qualifying Auto REST object.
 
-- Convert PL/SQL metadata definitions (`ords.define_module`, `ords.define_template`, `ords.define_handler`, `ords.define_parameter`) into API Spec JSON.
-- Convert qualifying auto REST object definitions (`ords.enable_object`, `ORDS_METADATA.ORDS.ENABLE_OBJECT`) into `autoApiSpecs` OCI requests.
+Also apply the Oracle IAM app changes and endpoint normalization when target files exist. If a file/path is missing, report it and continue with available migration artifacts.
 
-### Required deliverables
+If ORDS is not installed in the target database and no ORDS PL/SQL metadata definitions are provided, mark this mode as `not applicable` for that environment. Do not block IAM/OIDC + pool-level JWT setup on missing `ORDS_METADATA`.
 
-- `ords_config_service/apispec.json` for standard ORDS definitions (`ords.define_module`, `ords.define_template`, `ords.define_handler`, `ords.define_parameter`).
-- `ords_config_service/oci_requests.sh` for OCI raw requests (always include the API Spec create request and include one Auto API Spec request per qualifying `ords.enable_object`).
+## Accepted Migration Input
 
-When this skill is used to generate those two migration artifacts, you must also apply the required sample-app code updates from this document:
+When source ORDS PL/SQL metadata exists, accept only PL/SQL metadata from these calls:
 
-- Apply section **7. Oracle IAM Target Setup** (`app/utils/auth.server.ts`, OIDC routes/constants/profile model, login form action changes, logout constants import).
-- Apply the **Code baseline update for sample app endpoint composition** shown in this section (normalize `BASE_ENDPOINT` and set `STATS_ENDPOINT` from it).
-- Treat these as implementation changes in app source files, not documentation-only notes.
-- If a referenced file/path does not exist in the target workspace, report it explicitly and continue generating migration artifacts for available inputs.
+- `ords.define_module`
+- `ords.define_template`
+- `ords.define_handler`
+- `ords.define_parameter`
+- `ords.define_privilege`
+- `ords.define_role`
+- `ords.define_client`
+- `ords.enable_object`
+- `ORDS_METADATA.ORDS.ENABLE_OBJECT`
 
-### Migration guardrails
+If none of these source definitions are available, report that PL/SQL-source conversion is skipped and continue with runtime validation and authorization checks.
 
-- Accepted migration input is **PL/SQL definition source only** from `.sql` artifacts.
-- Allowed statements for extraction are only ORDS PL/SQL definitions such as `ords.define_module`, `ords.define_template`, `ords.define_handler`, `ords.define_parameter`, `ords.define_privilege`, `ords.define_role`, `ords.define_client`, and SQL-side `ORDS_METADATA.ORDS.ENABLE_OBJECT` / `ords.enable_object`.
-- Do not use JavaScript constants, generated JSON, exported metadata-catalog documents, runtime endpoint discovery, or any non-PL/SQL source as migration input.
-- For auto REST objects, derive qualifying `autoApiSpecs` entries only from SQL `ENABLE_OBJECT` calls where `p_enabled => TRUE` and `p_auto_rest_auth => TRUE`.
-- Build `apispec.json` from ORDS source metadata only. Do not generate it by copying any existing OpenAPI file.
-- Do not use any OpenAPI definition (including metadata-catalog exports, Swagger/OpenAPI files, or prior `openapi.json`) as migration source input under any circumstance. API Spec migration must be derived only from `ords.define_*` metadata so `x-dbtools-operation` and `x-dbtools-properties` are preserved correctly.
-- Scope boundary for migration artifacts: always update `ords_config_service/apispec.json` and `ords_config_service/oci_requests.sh`. In addition, apply the required sample-app code changes listed above when the target app files are present. Do not modify Auth0 baseline or Oracle IAM target setup guidance unless explicitly requested.
-- Do not read from ORDS metadata-catalog OpenAPI (for example `/metadata-catalog/openapi.json`) during migration. This skill is PL/SQL-definition-only for migration input.
+Do not use JavaScript constants, generated JSON, metadata-catalog output, runtime endpoint discovery, Swagger/OpenAPI files, or prior `openapi.json` as migration input.
+
+## Migration Guardrails
+
+- Build `apispec.json` from ORDS source metadata only.
 - Keep custom REST and Auto REST artifacts separate.
-- Map `ords.define_*` metadata to OpenAPI paths and preserve vendor metadata (`x-dbtools-operation` / `x-dbtools-properties`).
-- For qualifying auto REST objects (`ENABLE_OBJECT` with `p_enabled => TRUE` and `p_auto_rest_auth => TRUE`), generate separate OCI `autoApiSpecs` request artifacts and keep those objects out of OpenAPI `paths`.
-- Keep conversion deterministic. When metadata is ambiguous, use the safest minimal valid API Spec output that can be derived from ORDS PL/SQL metadata and document the gap.
+- Put qualifying Auto REST objects in `autoApiSpecs`, never in OpenAPI `paths`.
+- Qualify Auto REST objects only when `p_enabled => TRUE` and `p_auto_rest_auth => TRUE`.
+- Preserve `x-dbtools-operation`, `x-dbtools-properties`, `p_source_type`, and `p_source`.
+- Fail generation if any operation source is empty.
+- Parse `ORDS.DEFINE_HANDLER` with parenthesis-depth and SQL string-literal awareness. Do not stop on `);` inside SQL or PL/SQL text.
+- Path template placeholders and `in: path` parameter objects must match exactly, including case.
+- Each `{placeholder}` requires one parameter with the identical `name`.
+- No extra path parameters are allowed.
+- Never invent request bodies, response fields, scopes, roles, secrets, OCIDs, domains, or customer values.
 
-### ORDS sample app compatibility profile
+## Compatibility Profile
 
-- Use OpenAPI `3.1.0`.
-- Normalize collection endpoint paths without trailing slash (for example `/authuser/v1/events`, `/euser/v1/artists`, `/euser/v1/cities`, `/euser/v1/events`, `/euser/v1/eventsHome`, `/euser/v1/eventStatus`, `/euser/v1/musicGenres`, `/euser/v1/venues`, `/euser/v1/landing_page_global_stats`).
-- Keep application endpoint constants aligned to the normalized handler path exactly.
-- Use operation-level tags and include top-level module tags (`concert_app.euser.v1`, `concert_app.authuser.v1`, `concert_app.adminuser.v1`).
-- For this sample app compatibility profile, document operations with `200` response keys and include explicit `application/json` schemas (`object` or `array` with `additionalProperties: true`) so OCI config-service accepts and renders operations consistently.
-- For public `euser` endpoints set `security: []` explicitly.
-- For protected endpoints use operation-level bearer scopes exactly as follows: `authuser` => `[{"bearerAuth":["concert_app_authuser"]}]`, `adminuser` => `[{"bearerAuth":["concert_app_admin"]}]`.
-- Use flattened `x-dbtools-properties` shape: `{"itemsPerPage": <number>, "published": "PUBLISHED"}`.
-- Validation rule: `x-dbtools-properties.itemsPerPage` must be an integer `>= 1`.
-- Keep `x-dbtools-operation.source` semantically intact while normalizing SQL string escaping for JSON output (single SQL quotes in text, not doubled quote artifacts).
+Use this OpenAPI and DBTools profile:
 
-### Mapping rules
+- OpenAPI version: `3.1.0`
+- Collection paths: normalized without trailing slash
+- Tags: operation-level tags must use only existing module names from PL/SQL `p_module_name` (for example `concert_app.euser.v1`, `concert_app.authuser.v1`, `concert_app.adminuser.v1`)
+- Do not create derived or alias tags such as `euser`, `authuser`, or `adminuser`
+- Responses: `200` responses with explicit `application/json` schemas
+- Public `euser` endpoints: `security: []`
+- Protected `authuser` endpoints: `[{"BEARER":["concert_app_authuser"]}]`
+- Protected `adminuser` endpoints: `[{"BEARER":["concert_app_admin"]}]`
+- `x-dbtools-properties`: flattened, with integer `itemsPerPage >= 1`
+- SQL sources: semantically intact and JSON-safe escaped
+- Path-template validation: strict, case-sensitive, no missing or extra path parameters
 
-- `ords.define_module`: use module/base path for path grouping, do not invent a standalone module object.
-- `ords.define_template`: append template to base path and normalize `:id` tokens to `{id}`.
-- `ords.define_handler`: create operation by HTTP method and preserve `sourceType` and `source` in `x-dbtools-operation`; preserve `parameters` when present. In the ORDS sample app compatibility profile, do not emit `moduleName`, `pattern`, or `method` unless the target runtime explicitly requires them.
-- `p_source_type`: copy exactly to `x-dbtools-operation.sourceType`; never infer from SQL text.
-- `p_source`: preserve verbatim in `x-dbtools-operation.source` (JSON escaping only).
-- Parser correctness requirement: extract `ORDS.DEFINE_HANDLER` blocks with parenthesis-depth and SQL string-literal awareness; never terminate parsing on `);` found inside SQL/PLSQL text.
-- Validation requirement: every generated operation must include a non-empty `x-dbtools-operation.source`; fail generation when any source is empty.
-- `ords.define_parameter`: map URI params to OpenAPI parameters and preserve binding metadata under `x-dbtools-operation.parameters`.
-- `ords.enable_object` / `ORDS_METADATA.ORDS.ENABLE_OBJECT`: produce separate `autoApiSpecs` OCI requests (not OpenAPI paths) for qualifying objects only, using SQL definitions as the only source.
-- Never invent request body fields, response schema fields, scopes, or roles that are not explicit in source metadata.
-- If metadata is missing, omit fields rather than invent values, then document the gap.
-
-### Security rules
-
-- Only migrate security proven by source metadata (`ords.define_privilege`, `ords.define_role`, and when relevant `ords.define_client`).
-- API Spec security may be root-level or operation-level; operation-level overrides root-level for that operation.
-- For this sample app, prefer operation-level security declarations so mixed public/protected endpoints remain explicit.
-- API Spec allowed models: HTTP Basic, HTTP Bearer (JWT role-based pools), OAuth2 (scope-based pools), OpenID Connect (scope-based pools), or public access when security is empty/omitted.
-- For this sample app JWT pool profile, define `components.securitySchemes.bearerAuth` as `{ "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }` (do not use OAuth2 for this bearer scheme).
-- Auto API Spec uses `securitySchemes` values `BASIC` or `BEARER` (or public access by omission/empty array), aligned to the target pool JWT profile.
-- Scope-based security must map to scope-based pool profiles; role-based security must map to role-based pool profiles.
-- Do not mix scopes and roles in the same Auto API Spec security definition.
-
-### Code baseline update for sample app endpoint composition
-
-```ts
-export const BASE_ENDPOINT = (ADBS_ENDPOINT || "").replace(/\/$/, "");
-export const STATS_ENDPOINT = `${BASE_ENDPOINT}/euser/v1/landing_page_global_stats`;
 ```
 
-Use this normalization before composing API paths to avoid double slashes and route mismatches in UI/API calls.
+## Output Contract
 
-### Output contract for migration artifacts
+Every migration run must produce both files:
 
 - `ords_config_service/apispec.json`
-- `ords_config_service/oci_requests.sh` containing OCI raw-request commands only (no headings, notes, or non-OCI commands)
-- Migration output is invalid unless both files are present on every run.
-- Migration output is incomplete unless required sample-app code changes from section 7 and endpoint normalization are applied (or missing paths are reported explicitly).
-- `oci_requests.sh` order: first one create `apiSpecs` request, then one `autoApiSpecs` request per qualifying object (for objects that meet the qualifying rule)
-- API spec content size must be between `2` and `102400` characters
-- If source contains only qualifying `ords.enable_object` calls and no normal handler definitions, `apispec.json` may have empty `paths`
+- `ords_config_service/oci_requests.sh`
 
-`ords_config_service/oci_requests.sh` (only OCI raw-request commands):
+`apispec.json` content must be 2 to 102400 characters. If only qualifying `ords.enable_object` calls exist, `paths` may be empty.
+
+Before submitting `apiSpecs` and `autoApiSpecs`, get the pool key:
 
 ```bash
-oci raw-request \
-  --http-method POST \
-  --target-uri "https://dbtools.us-phoenix-1.oci.oraclecloud.com/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools/$POOL_KEY/apiSpecs" \
-  --request-body "$(jq -Rs --arg type "DEFAULT" --arg displayName "Demo API Spec" '{type:$type, displayName:$displayName, content:.}' ords_config_service/apispec.json)" \
-  --profile DEFAULT
-
-oci raw-request \
-  --http-method POST \
-  --target-uri "https://dbtools.us-phoenix-1.oci.oraclecloud.com/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools/$POOL_KEY/autoApiSpecs" \
-  --request-body '{
-    "type": "DEFAULT",
-    "displayName": "The SEARCH_ARTIST_VIEW VIEW",
-    "databaseObjectName": "SEARCH_ARTIST_VIEW",
-    "databaseObjectType": "VIEW",
-    "description": "This is a rest API of SEARCH_ARTIST_VIEW",
-    "alias": "search_artist_view",
-    "operations": ["READ"]
-  }' \
-  --profile DEFAULT
+oci dbtools-runtime database-api-gateway-config-pool list \
+  --database-api-gateway-config-id "$CONFIG_OCID"
 ```
 
-### Full reference example (PL/SQL -> API Spec + Auto API Spec)
+## `oci_requests.sh` Pattern
+
+Use one `apiSpecs` create request first:
+
+```bash
+CONTENT=$(jq -c . ords_config_service/apispec.json)
+
+oci dbtools-runtime database-api-gateway-config-pool-api-spec create default \
+  --database-api-gateway-config-id $CONFIG_OCID \
+  --pool-key $POOL_KEY \
+  --display-name concert_sample_app_apispec \
+  --content "$CONTENT"
+```
+
+Then add one `autoApiSpecs` request per qualifying object:
+
+```bash
+oci dbtools-runtime database-api-gateway-config-pool-auto-api-spec create default \
+  --database-api-gateway-config-id $CONFIG_OCID \
+  --pool-key $POOL_KEY\
+  --display-name "The SEARCH_VIEW VIEW" \
+  --database-object-name SEARCH_VIEW \
+  --database-object-type VIEW \
+  --description "This is a rest API of SEARCH_VIEW" \
+  --alias "search_view" \
+  --from-json '{"operations":["READ"]}'
+```
+
+## Reference Conversion Example
 
 Input ORDS PL/SQL source:
 
@@ -1093,23 +394,18 @@ BEGIN
     p_access_method      => 'IN'
   );
 
-  ORDS.CREATE_ROLE(p_role_name => 'concert_app_authuser');
-
   DECLARE
-    l_roles    OWA.VC_ARR;
     l_modules  OWA.VC_ARR;
     l_patterns OWA.VC_ARR;
   BEGIN
-    l_roles(1) := 'concert_app_authuser';
     l_modules(1) := 'music';
     l_patterns(1) := '/music/*';
     ORDS.DEFINE_PRIVILEGE(
-      p_privilege_name => 'music.read',
-      p_roles          => l_roles,
+      p_privilege_name => 'concert_app_authuser',
       p_patterns       => l_patterns,
       p_modules        => l_modules,
-      p_label          => 'music read privilege',
-      p_description    => 'Read access for music endpoints'
+      p_label          => 'concert_app_authuser',
+      p_description    => 'Provides access to the user specific endpoints'
     );
   END;
 
@@ -1127,7 +423,7 @@ END;
 /
 ```
 
-Generated `ords_config_service/apispec.json`:
+Generated `ords_config_service/apispec.json`; update `<IDENTITY_DOMAIN_URL>` in `tokenUrl` before generation:
 
 ```json
 {
@@ -1168,7 +464,7 @@ Generated `ords_config_service/apispec.json`:
         },
         "security": [
           {
-            "bearerAuth": ["concert_app_authuser"]
+            "BEARER": ["concert_app_authuser"]
           }
         ],
         "x-dbtools-operation": {
@@ -1193,10 +489,18 @@ Generated `ords_config_service/apispec.json`:
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+      "BEARER": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://<IDENTITY_DOMAIN_URL>:443/oauth2/v1/token",
+            "scopes": {
+              "concert_app_admin": "Provides access to the concert app admin endpoints",
+              "concert_app_authuser": "Provides access to the user specific endpoints",
+              "concert_app_euser": "Provides limited access to the concert app endpoints"
+            }
+          }
+        }
       }
     }
   },
@@ -1210,112 +514,483 @@ Generated `ords_config_service/apispec.json`:
 Generated `ords_config_service/oci_requests.sh`:
 
 ```bash
-oci raw-request \
-  --http-method POST \
-  --target-uri "https://dbtools.us-phoenix-1.oci.oraclecloud.com/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools/$POOL_KEY/apiSpecs" \
-  --request-body "$(jq -Rs --arg type "DEFAULT" --arg displayName "Demo API Spec" '{type:$type, displayName:$displayName, content:.}' ords_config_service/apispec.json)" \
-  --profile DEFAULT
+CONTENT=$(jq -c . ords_config_service/apispec.json)
 
-oci raw-request \
-  --http-method POST \
-  --target-uri "https://dbtools.us-phoenix-1.oci.oraclecloud.com/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools/$POOL_KEY/autoApiSpecs" \
-  --request-body '{
-    "type": "DEFAULT",
-    "displayName": "The SEARCH_ARTIST_VIEW VIEW",
-    "databaseObjectName": "SEARCH_ARTIST_VIEW",
-    "databaseObjectType": "VIEW",
-    "description": "This is a rest API of SEARCH_ARTIST_VIEW",
-    "alias": "search_artist_view",
-    "operations": ["READ"]
-  }' \
-  --profile DEFAULT
+oci dbtools-runtime database-api-gateway-config-pool-api-spec create default \
+  --database-api-gateway-config-id $CONFIG_OCID \
+  --pool-key $POOL_KEY \
+  --display-name concert_sample_app_apispec \
+  --content "$CONTENT"
+
+oci dbtools-runtime database-api-gateway-config-pool-auto-api-spec create default \
+  --database-api-gateway-config-id $CONFIG_OCID \
+  --pool-key $POOL_KEY\
+  --display-name "The SEARCH_ARTIST_VIEW VIEW" \
+  --database-object-name SEARCH_ARTIST_VIEW \
+  --database-object-type VIEW \
+  --description "This is a rest API of SEARCH_ARTIST_VIEW" \
+  --alias "search_artist_view" \
+  --from-json '{"operations":["READ"]}'
 ```
 
-Example rule checks this reference must satisfy:
+This reference must satisfy all of these checks:
 
-- `SEARCH_ARTIST_VIEW` does not appear in OpenAPI `paths`.
-- Auto API Spec request exists because `p_enabled=true` and `p_auto_rest_auth=true`.
-- `x-dbtools-operation.sourceType` exactly matches `p_source_type`.
-- `x-dbtools-operation.source` is preserved verbatim from `p_source`.
+- `SEARCH_ARTIST_VIEW` is absent from OpenAPI `paths`.
+- The Auto API Spec request exists for the enabled and authenticated object.
+- `sourceType` and `source` are preserved exactly from source metadata.
 
-### Optional: create auto API specs
+## Migration Validation
 
-Use this only for objects that explicitly meet both conditions:
+Validate that:
 
-- `p_enabled => true`
-- `p_auto_rest_auth => true`
+- JSON is valid.
+- Paths, methods, and parameters match ORDS source metadata.
+- Auto API objects map correctly.
+- No personal machine paths appear in generated commands.
+- No source operation is empty.
+- No tenant-specific values were invented.
+
+Run an endpoint smoke check after deployment:
 
 ```bash
-POOL_KEY="<pool-ocid>"
-oci raw-request --http-method POST \
-  --target-uri "$DBTOOLS_ENDPOINT/20230222/databaseToolsDatabaseApiGatewayConfigs/$CONFIG_OCID/pools/$POOL_KEY/autoApiSpecs" \
-  --request-body '{
-    "type": "DEFAULT",
-    "displayName": "The SEARCH_ARTIST_VIEW VIEW",
-    "databaseObjectName": "SEARCH_ARTIST_VIEW",
-    "databaseObjectType": "VIEW",
-    "description": "This is a rest API of SEARCH_ARTIST_VIEW",
-    "alias": "search_artist_view",
-    "operations": ["READ"]
-  }' \
-  --profile DEFAULT
+curl http://<COMPUTE_HOST>:8088/ords/<POOL_NAME>/euser/v1/landing_page_global_stats | jq
 ```
 
-### Cloud metadata migration validation rules
+---
 
-- `apispec.json` must be valid JSON.
-- Paths must match original ORDS module/template structure.
-- HTTP methods must match original handlers.
-- Parameters must be preserved.
-- Auto API Spec objects must map to correct schema objects.
-- No personal machine paths should appear in generated commands.
+# Oracle IAM Target Setup
 
-## 11. Validation Workflow
+Run this first. Create or select an OCI IAM Identity Domain and one confidential application named `ords-sample-app`, used as both the Remix OIDC client and the resource definition for ORDS Concert scopes.
 
-Use this section after baseline or target setup.
+For environments where ORDS is not installed in the database, JWT validation must be configured in the ORDS pool (pool-level JWT profile), not as schema-level database metadata.
 
-### Environment validation
+When creating the OCI IAM domain for this flow, enable:
 
-- Verify required environment variables are present.
-- Ensure placeholders were replaced where required.
+- `Access signing certificate`
+- `Configure client access`
 
-### JWT validation
+## IAM Service Settings
 
-Check token claims:
+| Setting | Value |
+| --- | --- |
+| Access token expiration | `3600` seconds |
+| Primary audience | `ords/sample-app/` |
+| Supported scopes | `concert_app_authuser`, `concert_app_admin` |
+
+## IAM Client Settings
+
+| Setting | Value |
+| --- | --- |
+| Client type | `Confidential` |
+| Grant type | `Authorization code` |
+| Redirect URL | `http://localhost:3000/callback` |
+| Optional testing redirects | `https://insomnia.rest`, `https://oauth.pstmn.io/v1/callback` |
+| Token issuance policy | `Specific` |
+| Allowed resource scopes | `concert_app_authuser`, `concert_app_admin` |
+
+Map `concert_app_authuser` to authenticated-user ORDS privileges and `concert_app_admin` to admin privileges. Keep the client secret server-side only.
+
+## Required `.env` Values for Oracle IAM Mode
+
+```env
+# Copyright (c) 2024, Oracle and/or its affiliates.
+# All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+
+# ORDS base URL for your Base Database or ORDS instance.
+# Replace <VM-PUBLIC-IP>, <VM-PORT>, and <POOL_NAME> with actual values.
+# Keep the trailing slash.
+BD_ORDS_URL=http://<VM-PUBLIC-IP>:<VM-PORT>/ords/<POOL_NAME>
+
+# OCI IAM JWT credentials used by ORDS to validate protected endpoint requests.
+JWT_ISSUER=https://identity.oraclecloud.com/
+JWT_VERIFICATION_KEY=https://<DOMAIN_URL>:443/admin/v1/SigningCert/jwk
+JWT_AUDIENCE=ords/sample-app/
+
+# OCI IAM OIDC application configuration for the sample app.
+OIDC_RETURN_TO_URL=http://localhost:3000
+OIDC_REDIRECT_URI=http://localhost:3000/callback
+OIDC_CLIENT_ID=<CLIENT_ID>
+OIDC_CLIENT_SECRET=<CLIENT_SECRET>
+OIDC_AUTHORIZATION_ENDPOINT=https://<DOMAIN_URL>:443/oauth2/v1/authorize
+OIDC_TOKEN_ENDPOINT=https://<DOMAIN_URL>:443/oauth2/v1/token
+OIDC_USERINFO_ENDPOINT=https://<DOMAIN_URL>:443/oauth2/v1/userinfo
+OIDC_LOGOUT_ENDPOINT=https://<DOMAIN_URL>:443/oauth2/v1/userlogout
+OIDC_AUDIENCE=ords/sample-app/
+OIDC_SCOPES=openid,email,profile,ords/sample-app/concert_app_authuser,ords/sample-app/concert_app_admin
+```
+
+Validate exact tenant scope names before production rollout.
+
+ORDS JWT validation requires:
+
+- `JWT_ISSUER` exactly matches token `iss`.
+- `JWT_AUDIENCE` exactly matches token `aud`.
+- `JWT_VERIFICATION_KEY` is reachable by ORDS.
+- Required SBAC scopes are present in the access token.
+
+Pool-level JWT profile requirements for external ORDS:
+
+- JWT profile mode is `POOL`.
+- Pool JWT issuer matches `JWT_ISSUER`.
+- Pool JWT audience matches `JWT_AUDIENCE`.
+- Pool JWT JWK URL matches `JWT_VERIFICATION_KEY`.
+- Do not depend on `ORDS_METADATA` presence in the database for JWT validation.
+
+## Database Initialization and App Startup
+
+### Database Lifecycle Admin User
+
+Create a dedicated admin user for sample app database lifecycle operations such as `migrate`, `seed`, and `drop`, plus schema bootstrap.
+
+```sql
+-- Run as a privileged account, for example ADMIN or SYSDBA.
+CREATE USER BD_admin IDENTIFIED BY "<BD_ADMIN_PASSWORD>";
+GRANT CREATE SESSION TO BD_admin;
+GRANT CREATE USER, ALTER USER, DROP USER TO BD_admin;
+GRANT CREATE TABLE, CREATE VIEW, CREATE SEQUENCE, CREATE PROCEDURE, CREATE TRIGGER TO BD_admin;
+GRANT CREATE TYPE, CREATE SYNONYM TO BD_admin;
+GRANT UNLIMITED TABLESPACE TO BD_admin;
+GRANT GRANT ANY PRIVILEGE, GRANT ANY ROLE TO BD_admin;
+```
+
+Use `BD_admin` to create the sample app schema, normally `ORDS_CONCERT_APP`, and to run migration, seed, and drop scripts.
+
+Before `npm run dev`, initialize the sample schema and data:
+
+```bash
+npm run migrate
+npm run seed
+
+# Optional cleanup/reset when needed:
+npm run drop
+```
+
+Validate app startup:
+
+```bash
+npm run dev
+```
+
+If the project exposes a direct alias, `npm seed` is equivalent to `npm run seed`.
+
+## node-oracledb Thick Mode Issue
+
+If this error appears in Thin mode:
+
+```text
+NJS-116: the database listener/server is requiring Oracle Native Network Encryption and/or Data Integrity checksumming. Thin mode does not support those; use Thick mode.
+```
+
+Install Oracle Instant Client and set `ORACLE_CLIENT_LIB_DIR`:
+
+```bash
+hdiutil mount instantclient-basic-macos*.dmg
+cd /Volumes/instantclient-basic-macos*
+./install_ic.sh
+cd ~
+hdiutil unmount /Volumes/instantclient-basic-macos*
+```
+
+Then update `.env`:
+
+```env
+ORACLE_CLIENT_LIB_DIR=<path>/instantclient_23_26
+```
+
+Common IAM/OIDC issues are wrong endpoints, wrong client credentials, callback URL mismatch, and missing or mismatched scopes.
+
+---
+
+# ORDS Authorization Mapping
+
+Use SBAC by default.
+
+| Token scope | Expected access |
+| --- | --- |
+| `concert_app_authuser` | User endpoints. |
+| `concert_app_admin` | Admin endpoints. |
+| Missing scope | Denied for protected endpoints. |
+| Wrong audience | Denied. |
+| Wrong issuer | Denied. |
+
+Expected JWT shape:
+
+```json
+{
+  "iss": "<JWT_ISSUER>",
+  "aud": "<JWT_AUDIENCE>",
+  "exp": 1735689600,
+  "scope": "concert_app_authuser"
+}
+```
+
+Required checks:
+
+- A normal user token can access user endpoints.
+- A non-admin user token cannot access admin endpoints.
+- An admin token can access admin endpoints.
+- A token with missing scope is denied.
+- A token with wrong audience is denied.
+- A token with wrong issuer is denied.
+- Expired tokens are denied.
+
+---
+
+# Auth0 Baseline Setup
+
+Run this last, only for original setup reproduction, legacy automation, or migration comparison. Required values are `AUTH0_DOMAIN`, Management API app `CLIENT_ID` and `CLIENT_SECRET`, `API_IDENTIFIER`, callback/logout URLs, and scopes.
+
+## Rerunnable Auth0 Automation Rules
+
+- `POST /api/v2/resource-servers` may include `identifier`.
+- `PATCH /api/v2/resource-servers/{id}` must not include `identifier`.
+- A `400 invalid_body` mentioning `identifier` means the PATCH payload included an immutable field.
+
+Create a Machine-to-Machine Management API app with only needed scopes:
+
+- `create:resource_servers`
+- `read:resource_servers`
+- `update:resource_servers`
+- `create:clients`
+- `read:clients`
+- `update:clients`
+- `create:client_grants`
+- `read:client_grants`
+- `update:client_grants`
+- `delete:client_grants`
+
+Export credentials:
+
+```bash
+export AUTH0_DOMAIN="your-tenant.us.auth0.com"
+export CLIENT_ID="your_management_app_client_id"
+export CLIENT_SECRET="your_management_app_client_secret"
+```
+
+Obtain the Management API token:
+
+```bash
+ACCESS_TOKEN=$(
+  curl -s --request POST \
+    --url "https://$AUTH0_DOMAIN/oauth/token" \
+    --header "content-type: application/json" \
+    --data "{
+      \"client_id\": \"$CLIENT_ID\",
+      \"client_secret\": \"$CLIENT_SECRET\",
+      \"audience\": \"https://$AUTH0_DOMAIN/api/v2/\",
+      \"grant_type\": \"client_credentials\"
+    }" | jq -r '.access_token'
+)
+```
+
+Create or update the API resource server:
+
+```bash
+API_IDENTIFIER="https://concert.sample.app"
+API_NAME="ORDS Concert API"
+
+RESOURCE_SCOPES='[
+  {"value":"read:general_user_content","description":"Read all of the general user endpoints"},
+  {"value":"concert_app_authuser","description":"Provides access to the user specific endpoints"},
+  {"value":"concert_app_admin","description":"Provides access to the concert app admin endpoints"}
+]'
+```
+
+Find the existing resource server by identifier:
+
+```bash
+RS_LIST=$(
+  curl -s --request GET \
+    --url "https://$AUTH0_DOMAIN/api/v2/resource-servers?per_page=100" \
+    --header "authorization: Bearer $ACCESS_TOKEN"
+)
+
+RS_ID=$(printf '%s' "$RS_LIST" | jq -r --arg idf "$API_IDENTIFIER" '.[] | select(.identifier==$idf) | .id' | head -n1)
+```
+
+Create payload, where `identifier` is allowed:
+
+```bash
+CREATE_PAYLOAD=$(
+  jq -cn --arg name "$API_NAME" --arg identifier "$API_IDENTIFIER" --argjson scopes "$RESOURCE_SCOPES" '{
+    name: $name,
+    identifier: $identifier,
+    signing_alg: "RS256",
+    scopes: $scopes,
+    subject_type_authorization: {
+      user: { policy: "require_client_grant" },
+      client: { policy: "deny_all" }
+    }
+  }'
+)
+```
+
+Update payload, where `identifier` is not allowed:
+
+```bash
+UPDATE_PAYLOAD=$(
+  jq -cn --arg name "$API_NAME" --argjson scopes "$RESOURCE_SCOPES" '{
+    name: $name,
+    signing_alg: "RS256",
+    scopes: $scopes,
+    subject_type_authorization: {
+      user: { policy: "require_client_grant" },
+      client: { policy: "deny_all" }
+    }
+  }'
+)
+
+if [ -z "$RS_ID" ]; then
+  API_RESPONSE=$(
+    curl -s --request POST \
+      --url "https://$AUTH0_DOMAIN/api/v2/resource-servers" \
+      --header "authorization: Bearer $ACCESS_TOKEN" \
+      --header "content-type: application/json" \
+      --data "$CREATE_PAYLOAD"
+  )
+else
+  API_RESPONSE=$(
+    curl -s --request PATCH \
+      --url "https://$AUTH0_DOMAIN/api/v2/resource-servers/$RS_ID" \
+      --header "authorization: Bearer $ACCESS_TOKEN" \
+      --header "content-type: application/json" \
+      --data "$UPDATE_PAYLOAD"
+  )
+fi
+
+API_ID=$(printf '%s' "$API_RESPONSE" | jq -r '.id')
+API_IDENTIFIER=$(printf '%s' "$API_RESPONSE" | jq -r '.identifier')
+```
+
+Create the sample Regular Web Application client:
+
+```bash
+APP_RESPONSE=$(
+  curl --silent --show-error --fail \
+    --request POST \
+    --url "https://${AUTH0_DOMAIN}/api/v2/clients" \
+    --header "authorization: Bearer ${ACCESS_TOKEN}" \
+    --header "content-type: application/json" \
+    --data '{
+      "name": "ORDS Remix JWT Sample",
+      "app_type": "regular_web",
+      "grant_types": ["authorization_code"],
+      "callbacks": ["http://localhost:3000/callback"],
+      "allowed_logout_urls": ["http://localhost:3000"],
+      "web_origins": ["http://localhost:3000"]
+    }'
+)
+
+APP_CLIENT_ID=$(printf '%s' "$APP_RESPONSE" | jq -r '.client_id')
+APP_CLIENT_SECRET=$(printf '%s' "$APP_RESPONSE" | jq -r '.client_secret')
+```
+
+Authorize the app to call the API:
+
+```bash
+CLIENT_GRANT_RESPONSE=$(
+  curl -s --request POST \
+    --url "https://$AUTH0_DOMAIN/api/v2/client-grants" \
+    --header "authorization: Bearer $ACCESS_TOKEN" \
+    --header "content-type: application/json" \
+    --data "{
+      \"client_id\": \"$APP_CLIENT_ID\",
+      \"audience\": \"$API_IDENTIFIER\",
+      \"scope\": [
+        \"read:general_user_content\",
+        \"concert_app_authuser\",
+        \"concert_app_admin\"
+      ],
+      \"subject_type\": \"user\"
+    }"
+)
+```
+
+Generate environment values:
+
+```bash
+cat <<EOF
+AUTH0_DOMAIN=$AUTH0_DOMAIN
+AUTH0_LOGOUT_URL=https://$AUTH0_DOMAIN/v2/logout
+JWT_ISSUER=https://$AUTH0_DOMAIN/
+AUTH0_CLIENT_ID=$APP_CLIENT_ID
+AUTH0_CLIENT_SECRET=$APP_CLIENT_SECRET
+AUTH0_RETURN_TO_URL=http://localhost:3000
+AUTH0_CALLBACK_URL=http://localhost:3000/callback
+JWT_AUDIENCE=$API_IDENTIFIER
+JWT_VERIFICATION_KEY=https://$AUTH0_DOMAIN/.well-known/jwks.json
+EOF
+```
+
+Validate baseline startup:
+
+```bash
+npm run migrate
+npm run seed
+
+# Optional teardown/reset:
+npm run drop
+
+npm run dev
+```
+
+Common Auth0 issues are immutable `identifier` on PATCH, callback mismatch, and missing scopes in issued tokens.
+
+---
+
+# Validation Workflow
+
+Use this workflow for `validate-bootstrap` or after any setup change.
+
+## Environment Checks
+
+- Required variables are present.
+- Blocking placeholders are replaced.
+- Secrets are not committed or printed in docs.
+- ORDS base URL keeps the expected trailing slash where required by the app.
+- `.env` changes are followed by schema/data refresh when needed.
+
+Refresh schema and data after relevant `.env` changes:
+
+```bash
+npm run migrate
+npm run seed
+
+# Optional teardown/reset:
+npm run drop
+
+npm run dev
+```
+
+## JWT Checks
+
+Verify:
 
 - `iss`
 - `aud`
 - `exp`
 - `scope`
+- JWKS URL reachability
+- claim names expected by ORDS
 
-### App validation
+## App Checks
 
-Check:
+Verify:
 
-- Login
-- Logout
-- Callback route
-- Session handling
-- Protected route access
+- Login starts the OIDC flow.
+- Callback route completes successfully.
+- Logout redirects correctly.
+- Session handling works with large token payloads.
+- Protected routes enforce authorization.
 
-Use this reset sequence when `.env` values change:
+## ORDS Positive Checks
 
-```bash
-npm run drop
-npm run migrate
-npm run seed
-npm run dev
-```
+- Public endpoint works without a token.
+- Protected user endpoint accepts a valid user token.
+- Protected admin endpoint accepts a valid admin token.
 
-### ORDS validation
-
-Positive checks:
-
-- Public endpoint works.
-- Protected user endpoint works with valid user token.
-- Protected admin endpoint works with valid admin token.
-
-Negative checks:
+## ORDS Negative Checks
 
 - Missing token fails.
 - Invalid token fails.
@@ -1323,95 +998,48 @@ Negative checks:
 - Wrong audience fails.
 - Wrong issuer fails.
 - Missing scope fails.
-- Non-admin user cannot access admin endpoint.
+- Non-admin user fails against admin endpoints.
 
-### OCS validation
+## OCS Checks
 
-Check:
+- Config OCID resolves.
+- Pool exists and route value is correct.
+- Database Tools connection works.
+- ORDS starts with the config OCID.
+- Database is reachable.
+- API spec is available.
+- Auto API specs map to qualifying objects only.
 
-- Configuration OCID exists.
-- Pool exists.
-- Database Tools connection exists.
-- ORDS starts using config OCID.
-- Runtime can reach database.
-- API spec is published or available.
+---
 
-## 12. Troubleshooting
+# Troubleshooting Reference
 
-### Login failures
+| Area | Likely causes |
+| --- | --- |
+| Login | Wrong callback URL, client ID/secret, authorization endpoint, token endpoint, or route action. |
+| JWT | Wrong issuer, audience, JWKS URL, expired token, malformed token, or missing scope. |
+| Authorization | User lacks scope, ORDS privilege mapping is wrong, or claim name mismatches. |
+| OCS startup | Wrong config OCID/region, missing permissions, Database Tools connection issue, wrong pool key, or ORDS cannot access OCI config. |
+| API spec migration | Invalid JSON, incorrect path/method/parameter mapping, missing handler source, schema object not enabled, or Auto API Spec mismatch. |
+| Database bootstrap | Wrong connect string, missing Instant Client in Thick mode, insufficient admin grants, or missing schema credentials. |
 
-Common causes:
+---
 
-- Wrong callback URL
-- Wrong client ID
-- Wrong client secret
-- Wrong authorization endpoint
-- Wrong token endpoint
+# Style and Maintenance Rules
 
-### JWT validation failures
-
-Common causes:
-
-- Wrong issuer
-- Wrong audience
-- Wrong JWKS URL
-- Expired token
-- Missing scope
-
-### Authorization failures
-
-Common causes:
-
-- User does not have required scope
-- ORDS privilege mapping is wrong
-- Claim name mismatch
-
-### OCS startup failures
-
-Common causes:
-
-- Wrong configuration OCID
-- Wrong OCI region
-- Missing permission
-- Missing Database Tools connection
-- Wrong pool key
-- ORDS cannot access OCI configuration
-
-### API spec migration failures
-
-Common causes:
-
-- Invalid JSON
-- Incorrect path mapping
-- Missing handler method
-- Missing parameter mapping
-- Schema object not enabled
-- Auto API Spec object mismatch
-
-## 13. Style and Cleanup Requirements
-
-While restructuring or maintaining this skill:
-
-- Preserve useful technical details from existing instructions.
-- Remove duplicated explanations.
-- Replace personal local paths with generic repo-relative paths.
-- Use consistent naming:
-  - `Auth0 baseline`
-  - `Oracle IAM target`
-  - `OCI Database API Gateway / OCS`
-  - `ORDS authorization`
-  - `cloud metadata migration`
-- Use clear markdown headings.
-- Use tables where helpful.
-- Use fenced code blocks for commands and config examples.
-- Do not add unrelated project management sections.
-- Do not split this skill into multiple markdown files.
-- Do not remove important setup logic.
-- Do not invent real secrets, OCIDs, domains, or customer-specific values.
-
+- Preserve the technical setup logic and required bootstrap order.
+- Keep this skill as one markdown file. Do not split it into multiple markdown files.
+- Remove duplication when editing, but do not remove required validation, security, or migration constraints.
+- Use consistent terms: `Auth0 baseline`, `Oracle IAM target`, `OCI Database API Gateway / OCS`, `ORDS authorization`, and `cloud metadata migration`.
+- Use clear headings, tables where helpful, and fenced code blocks for commands/configuration.
+- Do not add unrelated project-management sections.
+- Do not invent real secrets, OCIDs, domains, customer values, paths, scopes, or roles.
+- If the user requests a narrow change, still preserve the required response contract and security warnings in abbreviated form.
 
 ## Sources
 
+- [Deploying ORDS with the OCI Database API Gateway Configuration Service](https://docs.oracle.com/en/database/oracle/oracle-rest-data-services/26.1/ordig/configuring-additional-databases.html#GUID-707DE44D-50D3-42CE-8350-FF69E53A6B6C)
+- [Configuring Oracle REST Data Services for Multiple Databases](https://docs.oracle.com/en/database/oracle/oracle-rest-data-services/26.1/ordig/configuring-additional-databases.html#GUID-C8D8F633-2777-41C5-BC4E-CC1F222CCDC0)
+- [Working with Database API Gateway Configurations](https://docs.oracle.com/en-us/iaas/database-tools/doc/database-api-gateway-configuration.html)
 - [How to Secure Oracle Database REST APIs with OCI IAM (IDCS) JSON Web Tokens and Role-Based Access Claims, Part One](https://blogs.oracle.com/database/ords-apis-iam-jwts-role-based-claims-part-one)
 - [Auth0 management API](https://auth0.com/docs/api/management/v2)
-- [Deploying ORDS with the OCI Database API Gateway Configuration Service](https://docs.oracle.com/en/database/oracle/oracle-rest-data-services/26.1/ordig/configuring-additional-databases.html#GUID-707DE44D-50D3-42CE-8350-FF69E53A6B6C)
