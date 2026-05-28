@@ -40,6 +40,8 @@ Helper scripts:
 - Use the optional agents above only as accelerators when the current runtime clearly supports agent delegation.
 - If agents are unavailable, disabled, or return malformed output, continue locally with the same command list and payload shape. Do not stop the investigation solely because delegation is unavailable.
 - Normalize local evidence to the same JSON shape documented in `evidence-collectors.md`.
+- Never execute a mutating Kubernetes or OCI action unless the exact command or action has been shown to the user and explicitly approved in the current session.
+- Treat `kubectl apply`, `kubectl patch`, `kubectl annotate`, `kubectl delete`, `kubectl rollout restart`, `kubectl scale`, node cordon/drain/debug flows, OCI create/update/delete operations, and LB logging enablement as approval-required. Approval for one command does not approve follow-up mutations.
 
 ## Phase 0 — Input & Preflight
 1. **Parse Arguments**
@@ -168,7 +170,7 @@ Helper scripts:
    - Look up required commands in `evidence-collectors.md`.
    - Build command batches with placeholders filled (namespace, resource names, compartment OCID, time window, and dependency hop identifiers when present).
    - **Auto-run read-only evidence commands without prompting** when tools are available.
-   - Only ask for confirmation before **potentially disruptive** actions (restarts, scaling, drains).
+   - Never auto-run remediation or mutating commands. Present the exact command, explain the expected impact, and wait for explicit user approval before running it.
    - Example command item:
      ```json
      {
@@ -228,7 +230,7 @@ Helper scripts:
    - For Node Health investigations, include optional Node Doctor diagnostics:
      - Trigger when Node Health is selected and there are node readiness/kubelet/runtime signals, or when user explicitly asks.
      - Scope starts with one candidate node first, then ask whether to continue to additional nodes.
-    - Default debug image to `docker.io/library/ubuntu` each run (`kubectl debug ... --image=<image-name>`), and allow user override. Keep the selected image in session for additional nodes unless user changes it.
+     - Default debug image to `docker.io/library/ubuntu` each run (`kubectl debug ... --image=<image-name>`), and allow user override. Keep the selected image in session for additional nodes unless user changes it.
      - Before execution, present the exact sequence and ask explicit confirmation per node:
        1) `bash ../../scripts/node-doctor-run.sh --node <node-name> --image <image-name>`
        2) (script executes `kubectl debug` + `chroot /host` + `sudo /usr/local/bin/node-doctor.sh --check`)
@@ -300,7 +302,7 @@ Helper scripts:
    - Table of top hypotheses with scores.
    - Highlight confidence level (e.g., `High`, `Medium`, `Low` based on score thresholds).
    - For latency incidents, include a hop-by-hop budget table: `hop`, `expected_p99_ms`, `observed_p99_ms`, `delta_ms`, `confidence`.
-   - Remediation commands rendered in fenced code blocks, prefixed with comments where necessary.
+   - Remediation commands rendered in fenced code blocks, prefixed with comments where necessary. Do not execute them unless the user approves the exact command or action after seeing it.
    - Prevention recommendations as concise bullet points.
 2. Call out any limitations: missing tooling, commands that failed, domains not yet explored, and missing dependency telemetry.
 3. Offer next actions:

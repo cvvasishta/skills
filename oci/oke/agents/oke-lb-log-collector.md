@@ -1,7 +1,6 @@
 ---
 name: oke-lb-log-collector
 description: Resolves OCI load balancer identity and collects LB logging status and issue signals for OKE troubleshooting.
-model: claude-3-haiku-20240307
 default-tool: bash
 ---
 

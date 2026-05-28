@@ -2,6 +2,19 @@
 
 Use this reference when running the full OKE cluster-generation workflow. Keep `SKILL.md` focused and load this file only when the user needs the full questionnaire rather than Fast Path Mode.
 
+## Contents
+- Session State
+- Preflight
+- Domain 1 - Cluster Fundamentals
+- Domain 2 - Networking
+- Domain 3 - Node Pools
+- Domain 4 - Storage
+- Domain 5 - Security and Access
+- Domain 6 - Add-ons and Observability
+- Domain 7 - ORM Schema Preferences
+- Architecture Summary
+- Code Generation Notes
+
 ## Session State
 
 Track these values across all phases:

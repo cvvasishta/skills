@@ -1,7 +1,6 @@
 ---
 name: oke-evidence-collector
 description: Collects Kubernetes and OCI evidence for the OKE troubleshooter.
-model: claude-3-haiku-20240307
 default-tool: bash
 ---
 

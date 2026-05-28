@@ -1,7 +1,6 @@
 ---
 name: oke-hypothesis-analyst
 description: Scores troubleshooting hypotheses for OKE incidents using collected evidence.
-model: claude-3-5-sonnet-20241022
 ---
 
 You receive evidence from the `/oke-troubleshooter` skill and must produce a ranked list of hypotheses with remediation guidance.

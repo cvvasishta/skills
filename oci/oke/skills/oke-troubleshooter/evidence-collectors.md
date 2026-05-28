@@ -14,6 +14,28 @@ For each diagnostic domain, gather the following evidence. Prefer JSON output (`
 
 When a command fails, set `fallback_used` to `true`, capture stderr (sanitized), and continue with other evidence.
 
+## Contents
+- Pod Scheduling
+- Pod Runtime
+- Node Health
+- OKE Add-ons Health
+- Pod Networking / OCI CNI / IPAM
+- DPDK / SR-IOV / Mellanox mlx5
+- Cluster Autoscaler / Node Pool Scaling
+- Networking / CNI / Load Balancer
+- DNS / Service Discovery
+- Ingress / OCI Native Ingress
+- Private Cluster / API Endpoint Connectivity
+- OCIR / Image Pull
+- Workload Identity / OCI API From Pods
+- Incident Timeline
+- Application Performance
+- Dependency Path
+- Storage / CSI
+- Control Plane
+- IAM / RBAC
+- OCI Infrastructure / Capacity and Service Limits
+
 ## Pod Scheduling
 - **Kubernetes**
   - `kubectl get pods -n <ns> <selector> -o wide`

@@ -2,6 +2,13 @@
 
 Use this note when an OKE workload combines DPDK, Multus, SR-IOV device-plugin resources, Mellanox/NVIDIA VFs, `mlx5_core`, `vfio-pci`, hugepages, or RDMA/verbs devices.
 
+## Contents
+- Decision Model
+- mlx5 Driver Rule
+- Read-Only Evidence Commands
+- Expected Evidence
+- Common Failure Pattern
+
 ## Decision Model
 
 Do not collapse these mechanisms into one check:
