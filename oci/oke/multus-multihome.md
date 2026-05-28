@@ -16,6 +16,38 @@ Supporting tools and references:
 - `oci/oke/skills/oke-multihome-deployer/references/oke-dpdk-mlx5-notes.md`
 - `oci/oke/skills/oke-multihome-deployer/validation-report-template.md`
 
+## Tool Use
+
+Use the included tools during the Multus multihome workflow:
+
+| Phase | Tool | When to use |
+|-------|------|-------------|
+| Discovery | `oci/oke/skills/oke-multihome-deployer/scripts/discover-oke-multihome.py` | Run after the user identifies the cluster, context, region, or compartment. Use it to discover node pools, placement subnets, secondary VNIC subnets, and suggested manifest generator arguments. |
+| Manifest generation | `oci/oke/skills/oke-multihome-deployer/scripts/generate-multihome-manifest.py` | Run after the user confirms namespace, NAD names, interfaces, image, and target nodes. It generates YAML but does not apply it. |
+
+Example discovery:
+
+```bash
+python3 oci/oke/skills/oke-multihome-deployer/scripts/discover-oke-multihome.py \
+  --cluster-id <cluster_ocid> \
+  --region <region> \
+  --compartment-id <compartment_ocid> \
+  --pretty
+```
+
+Example manifest generation:
+
+```bash
+python3 oci/oke/skills/oke-multihome-deployer/scripts/generate-multihome-manifest.py \
+  --namespace gva-multihome-test \
+  --default-interface enp1s0 \
+  --secondary-interface enp2s0 \
+  --pod gva-multihome-a=<node-a> \
+  --pod gva-multihome-b=<node-b>
+```
+
+Show generated YAML to the user before applying it. Applying manifests requires explicit approval.
+
 ## When to Use
 
 Use this skill for:

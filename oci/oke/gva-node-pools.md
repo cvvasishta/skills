@@ -16,6 +16,30 @@ Supporting tools and references:
 - `oci/oke/skills/oke-gva-deployer/references/gva.md`
 - `oci/oke/skills/oke-gva-deployer/validation-report-template.md`
 
+## Tool Use
+
+Use the included tools during the GVA workflow:
+
+| Phase | Tool | When to use |
+|-------|------|-------------|
+| Discovery | `oci/oke/scripts/gva-discover.sh` | Run after the user identifies the cluster and region. Use it to discover cluster metadata, subnets, and NSGs before prompting manually. |
+| Guided node-pool build | `oci/oke/scripts/gva-menu.sh` | Use for the interactive GVA node-pool workflow. It prompts in the terminal, collects fresh values, generates an `oci ce node-pool create` command, and can run it only after explicit approval and final `CREATE` confirmation. |
+| Optional local GVA CLI resolution | `oci/oke/scripts/gva-cli-resolve.sh` | Use only when the workflow needs to locate a local GVA CLI helper installation. |
+
+Example discovery:
+
+```bash
+bash oci/oke/scripts/gva-discover.sh --cluster <cluster-name-or-ocid> --region <region>
+```
+
+Example guided builder:
+
+```bash
+bash oci/oke/scripts/gva-menu.sh
+```
+
+Run `gva-menu.sh` only after the user has approved entering the interactive guided creation flow. It is not a passive help command. Choose print-only mode unless the user explicitly approves running the create command.
+
 ## When to Use
 
 Use this skill when the task involves:

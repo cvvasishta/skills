@@ -21,8 +21,55 @@ Supporting tools and references:
 - `oci/oke/scripts/oke-ocir-image-pull-check.sh`
 - `oci/oke/scripts/oke-workload-identity-check.sh`
 - `oci/oke/scripts/oke-incident-timeline.sh`
+- `oci/oke/scripts/node-doctor-run.sh`
 - `oci/oke/skills/oke-troubleshooter/evidence-collectors.md`
 - `oci/oke/skills/oke-troubleshooter/symptom-triage.md`
+
+## Tool Use
+
+Use the included tools to collect evidence instead of relying only on ad hoc commands:
+
+| Situation | Tool | When to run |
+|-----------|------|-------------|
+| Start of troubleshooting | `oci/oke/scripts/oke-discover.sh` | Run after the user identifies the target cluster and region. Use it to resolve cluster OCID, compartment, Kubernetes version, and deployment hints. |
+| Object relationship mapping | `oci/oke/scripts/oke-object-correlator.sh` | Run after namespace and at least one target object are known. Use it to map pods, nodes, Services, Ingresses, PVCs, and OCI resources. |
+| Add-on symptoms | `oci/oke/scripts/oke-addon-health.sh` | Run for unhealthy kube-system add-ons such as CoreDNS, CNI, CSI, metrics, or controllers. |
+| Pod networking, CNI, Multus, sandbox errors | `oci/oke/scripts/oke-pod-network-check.sh` | Run for `FailedCreatePodSandBox`, missing `network-status`, OCI CNI/IPAM, Multus, or pod interface symptoms. |
+| Pending pods or autoscaler failures | `oci/oke/scripts/oke-autoscaler-check.sh` | Run when pods are Pending, Cluster Autoscaler is not scaling, or node-pool capacity is suspect. |
+| DNS or service discovery failures | `oci/oke/scripts/oke-dns-check.sh` | Run for DNS timeout, `NXDOMAIN`, `SERVFAIL`, or service resolution issues. |
+| Ingress failures | `oci/oke/scripts/oke-ingress-check.sh` | Run for OCI Native Ingress controller, route, listener, certificate, or backend health issues. |
+| Private API endpoint failures | `oci/oke/scripts/oke-private-endpoint-check.sh` | Run for private cluster API connectivity, kubeconfig, endpoint, or auth path symptoms. |
+| OCIR image pull failures | `oci/oke/scripts/oke-ocir-image-pull-check.sh` | Run for `ImagePullBackOff`, `ErrImagePull`, unauthorized pulls, or repository path issues. |
+| Workload Identity failures | `oci/oke/scripts/oke-workload-identity-check.sh` | Run when pods cannot call OCI APIs using OKE Workload Identity. |
+| Timeline reconstruction | `oci/oke/scripts/oke-incident-timeline.sh` | Run after target objects are known to merge Kubernetes events, rollout history, object descriptions, and OCI alarms. |
+| Node-level diagnostics | `oci/oke/scripts/node-doctor-run.sh` | Run only after explicit approval because it uses `kubectl debug` to create a temporary debug pod and may delete it during cleanup. |
+
+Example discovery:
+
+```bash
+bash oci/oke/scripts/oke-discover.sh --cluster <cluster-name-or-ocid> --region <region>
+```
+
+Example object correlation:
+
+```bash
+bash oci/oke/scripts/oke-object-correlator.sh \
+  --namespace <namespace> \
+  --cluster-id <cluster_ocid> \
+  --compartment-id <compartment_ocid> \
+  --region <region> \
+  --pod <pod-name>
+```
+
+Example symptom-specific check:
+
+```bash
+bash oci/oke/scripts/oke-pod-network-check.sh --namespace <namespace> --pod <pod-name>
+```
+
+Treat these tool outputs as evidence. Summarize findings, anomalies, raw snippets, and fallback flags in the diagnosis report.
+
+Ask for explicit approval before running `node-doctor-run.sh`.
 
 ## Safety Rules
 

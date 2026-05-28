@@ -16,6 +16,29 @@ Supporting tools and references:
 - `oci/oke/skills/oke-cluster-generator/output-templates/terraform.md`
 - `oci/oke/skills/oke-cluster-generator/output-templates/schema.md`
 
+## Tool Use
+
+Use the included tools during the design workflow:
+
+| Phase | Tool | When to use |
+|-------|------|-------------|
+| Preflight | `oci/oke/scripts/preflight-check.sh` | Run before asking detailed design questions when OCI CLI is available. Use the output to identify tenancy OCID, home region, subscribed regions, and active compartments. |
+| Networking | `oci/oke/scripts/validate-cidr.sh` | Run before finalizing VCN, pod, and service CIDRs. Re-run if the user revises any CIDR late in the flow. |
+
+Example preflight:
+
+```bash
+bash oci/oke/scripts/preflight-check.sh
+```
+
+Example CIDR validation:
+
+```bash
+bash oci/oke/scripts/validate-cidr.sh 10.0.0.0/16 10.244.0.0/16 10.96.0.0/16
+```
+
+If a tool fails because local OCI access is unavailable, continue with explicit manual prompts and record that generated artifacts rely on manually supplied values.
+
 ## Design Sequence
 
 1. Confirm tenancy context:
