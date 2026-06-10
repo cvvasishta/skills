@@ -386,3 +386,15 @@ Use this pattern when the incident is "deployment is slow" and the deployment de
    - Remediation should target `payments-api->orders` first, then re-measure end-to-end p99.
 
 The skill should deliver actionable insight even when only partial data is available.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengdownloadkubeconfigfile.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm
+- https://docs.oracle.com/en-us/iaas/Content/Balance/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Logging/home.htm
+- https://kubernetes.io/docs/tasks/debug/debug-application/
+- https://kubernetes.io/docs/reference/kubectl/

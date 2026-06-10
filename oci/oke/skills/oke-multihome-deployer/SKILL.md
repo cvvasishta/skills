@@ -128,3 +128,12 @@ Read `references/oke-dpdk-mlx5-notes.md` when:
 - You need to decide whether the issue is Multus/NAD attachment, resource allocation, driver binding, RDMA/verbs exposure, hugepages, or app PCI/interface mapping.
 
 For node-side inspection, prefer a privileged diagnostic DaemonSet that mounts `/` at `/host` and runs commands with `chroot /host`, rather than SSHing to each worker.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm
+- https://github.com/k8snetworkplumbingwg/multus-cni
+- https://github.com/k8snetworkplumbingwg/network-attachment-definition-client
+- https://www.cni.dev/plugins/current/main/ipvlan/
+- https://kubernetes.io/docs/tasks/debug/debug-cluster/kubectl-node-debug/

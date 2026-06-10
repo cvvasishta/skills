@@ -48,3 +48,9 @@ validated, or blocked by missing information.
 If validation fails, keep these causes separate: missing Application Resource on nodes,
 wrong resource name in workload, missing toleration, invalid `ipCount`, subnet capacity,
 or incompatible node-pool image/shape.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+- https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/

@@ -43,3 +43,9 @@ kubectl -n <namespace> describe <resource> <name>
 
 - List missing permissions, unavailable CLI tools, failed commands, or uncollected
   telemetry that affects confidence.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://kubernetes.io/docs/tasks/debug/debug-application/
+- https://kubernetes.io/docs/reference/kubectl/

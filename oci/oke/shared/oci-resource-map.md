@@ -126,3 +126,13 @@ Use the manual command chains below when the correlator cannot resolve a link or
    ```
 
 Keep this document in sync with any future automation covering additional OCI resource types.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Balance/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm
+- https://docs.oracle.com/en-us/iaas/Content/File/Concepts/filestorageoverview.htm
+- https://docs.oracle.com/en-us/iaas/Content/Identity/policieshow/Policy_Basics.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/
+- https://kubernetes.io/docs/reference/kubectl/

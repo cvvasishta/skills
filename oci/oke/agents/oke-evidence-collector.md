@@ -71,3 +71,10 @@ Keep each `raw_snippets` entry under 500 characters. If command output is huge, 
 - Domains processed sequentially.
 - Output JSON well-formed and parseable.
 - Sensitive values redacted.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/
+- https://kubernetes.io/docs/reference/kubectl/
+- https://kubernetes.io/docs/tasks/debug/debug-application/

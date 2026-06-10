@@ -37,3 +37,10 @@ VNIC subnets, and ready node names before generating YAML.
 ## What This Produces
 
 See [sample Multus manifest](../outputs/oke-multihome-deployer/gva-multihome-pods.yaml).
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm
+- https://github.com/k8snetworkplumbingwg/multus-cni
+- https://github.com/k8snetworkplumbingwg/network-attachment-definition-client

@@ -41,3 +41,10 @@ State whether multihome validation passed, failed, or is incomplete.
 List the first failed check and the most likely fix. Keep Multus/NAD failures,
 OCI CNI/IPAM allocation failures, node-interface issues, and DPDK/SR-IOV driver
 issues as separate facts.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://github.com/k8snetworkplumbingwg/multus-cni
+- https://github.com/k8snetworkplumbingwg/network-attachment-definition-client
+- https://kubernetes.io/docs/reference/kubectl/

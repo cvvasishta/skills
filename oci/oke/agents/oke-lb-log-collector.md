@@ -140,3 +140,11 @@ If unresolved, set:
   {"error_code":"LB_LOG_COLLECTOR_INPUT","message":"...","remediation":"Provide valid payload.","docs_url":""}
   ```
 - Expected environment/API issues should not hard-fail the whole run. Return JSON with `fallback_used=true`.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Balance/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Logging/home.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/
+- https://kubernetes.io/docs/concepts/services-networking/service/

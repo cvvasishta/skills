@@ -92,3 +92,12 @@ ip addr add <vip>/32 dev net1
 ```
 
 Reserve VIP ranges carefully. Confirm OCI IPAM allocation behavior first to avoid collisions with dynamically assigned pod addresses.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm
+- https://github.com/k8snetworkplumbingwg/multus-cni
+- https://github.com/k8snetworkplumbingwg/network-attachment-definition-client
+- https://www.cni.dev/plugins/current/main/ipvlan/
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/network/vnic/assign-private-ip.html

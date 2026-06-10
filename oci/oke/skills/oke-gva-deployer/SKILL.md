@@ -274,3 +274,12 @@ Deliverables should include:
    resource validation after running `kubectl describe node <node_name>`
 6. A final validation report using `validation-report-template.md` when post-create
    validation evidence is available
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/create.html
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/update.html
+- https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+- https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/

@@ -157,3 +157,16 @@ For ORM audience filtering:
 | Minimal | tenancy_ocid, compartment_ocid, region only | All others, with safe defaults |
 
 After delivering artifacts, offer targeted refinements such as additional add-ons, GitOps bootstrapping, RDMA/SR-IOV device plugin manifests, or operational Makefile targets.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingclusterusingoke_topic-Using_the_Console_to_create_a_Custom_Cluster_with_Explicitly_Defined_Settings.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengworkingwithenhancedclusters.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengintroducingclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm
+- https://docs.oracle.com/en-us/iaas/Content/ResourceManager/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ResourceManager/Concepts/terraformconfigresourcemanager_topic-schema.htm
+- https://github.com/oracle-terraform-modules/terraform-oci-oke
+- https://registry.terraform.io/providers/oracle/oci/latest/docs

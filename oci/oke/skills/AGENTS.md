@@ -31,3 +31,8 @@ bash tests/scripts-smoke.sh
 ```
 
 If adding a new OKE skill, update `oci/SKILL.md`, the root `README.md`, and the relevant `oci/oke/*.md` routing file.
+
+## Sources
+
+- https://github.com/oracle/skills/blob/main/SKILL_AUTHORING_GUIDE.md
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm

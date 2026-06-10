@@ -107,3 +107,12 @@ If the pod requests networks such as `noiommu-0,noiommu-1` and device-plugin res
 - The pod has the expected `net1`, `net2`, etc. interfaces.
 
 Only after this is correct should the investigation move to DPDK PMD, PCI allowlist, hugepage, or NUMA details.
+
+## Sources
+
+- https://github.com/k8snetworkplumbingwg/multus-cni
+- https://github.com/k8snetworkplumbingwg/network-attachment-definition-client
+- https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin
+- https://doc.dpdk.org/guides/nics/mlx5.html
+- https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+- https://kubernetes.io/docs/tasks/debug/debug-application/

@@ -369,3 +369,19 @@ When a command fails, set `fallback_used` to `true`, capture stderr (sanitized),
 ---
 
 When evidence volume is large, trim to the most recent entries and provide links or commands the operator can rerun locally.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengintroducingclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengobservingworkernodeaddonhealth.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm
+- https://docs.oracle.com/en-us/iaas/Content/Balance/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Logging/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/Registry/home.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/
+- https://kubernetes.io/docs/tasks/debug/debug-application/
+- https://kubernetes.io/docs/concepts/services-networking/service/
+- https://kubernetes.io/docs/concepts/storage/persistent-volumes/

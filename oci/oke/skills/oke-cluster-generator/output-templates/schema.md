@@ -209,3 +209,9 @@ variables:
     required: true
     default: false
 ```
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ResourceManager/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ResourceManager/Concepts/terraformconfigresourcemanager_topic-schema.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm

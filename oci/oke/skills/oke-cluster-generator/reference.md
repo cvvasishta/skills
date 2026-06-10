@@ -98,3 +98,13 @@ module-version assumption in the generated summary.
 | D6 | OCI Native Ingress add-on | `cluster_addons = { oci-native-ingress-controller = { remove = false } }` | map | Enhanced only |
 | D6 | OCI Logging | `oke_logging_enabled = true` | bool | |
 | D6 | OCI Monitoring | `oke_monitoring_enabled = true` | bool | |
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengworkingwithenhancedclusters.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengintroducingclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
+- https://github.com/oracle-terraform-modules/terraform-oci-oke
+- https://registry.terraform.io/providers/oracle/oci/latest/docs

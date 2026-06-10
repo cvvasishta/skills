@@ -51,3 +51,9 @@ and no public worker nodes. I still need your tenancy OCID and compartment OCID.
 ## What This Produces
 
 See [sample Terraform output](../outputs/oke-cluster-generator/main.tf).
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://github.com/oracle-terraform-modules/terraform-oci-oke
+- https://docs.oracle.com/en-us/iaas/Content/ResourceManager/home.htm

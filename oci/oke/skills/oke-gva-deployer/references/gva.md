@@ -1,6 +1,7 @@
 # Generic VNIC Attachment (GVA) — Reference Summary
 
-Source: `gva-documentation_1_14.docx` (Document Version 1.0, Last Updated December 2025).
+Source baseline: public OKE documentation for attaching multiple secondary VNICs
+for pod networking.
 
 ## What GVA Does
 - Provides per-secondary-VNIC configuration for OKE pods.
@@ -28,7 +29,10 @@ Source: `gva-documentation_1_14.docx` (Document Version 1.0, Last Updated Decemb
 - `ipCount` per VNIC is capped at **256**.
 - Pods can request **only one** Application Resource type.
 - Pods must request **exactly 1** unit of that resource.
-- Multi-homed pods are not supported.
+- Pod-level Application Resource selection is for a single secondary VNIC profile.
+  Use Multus and NetworkAttachmentDefinitions (NADs) for pods that need multiple
+  interfaces; do not combine pod-level Application Resource requests with Multus
+  network annotations in the same pod spec.
 - VNIC attachment limits depend on instance shape.
 
 ## Node Behavior
@@ -83,3 +87,11 @@ spec:
 - GVA reduces per-interface pod capacity (256 IPs per VNIC).
 - Set kubelet `max-pods` via cloud-init accordingly.
 - HostNetwork pods still count toward max-pods.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/create.html
+- https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+- https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/

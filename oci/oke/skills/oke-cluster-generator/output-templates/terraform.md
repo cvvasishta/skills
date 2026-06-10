@@ -130,3 +130,9 @@ output "operator_private_ip" {
 
 Omit `bastion_public_ip` and `operator_private_ip` if neither was created (both
 `create_bastion` and `create_operator` are false).
+
+## Sources
+
+- https://github.com/oracle-terraform-modules/terraform-oci-oke
+- https://registry.terraform.io/providers/oracle/oci/latest/docs
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm

@@ -144,6 +144,7 @@ Before presenting the final stack, check:
 - https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
 - https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingclusterusingoke_topic-Using_the_Console_to_create_a_Custom_Cluster_with_Explicitly_Defined_Settings.htm
 - https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengworkingwithenhancedclusters.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengintroducingclusteraddons.htm
 - https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
 - https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm
 - https://github.com/oracle-terraform-modules/terraform-oci-oke

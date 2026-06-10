@@ -23,3 +23,9 @@ oci ce node-pool update --node-pool-id <node_pool_ocid> --size <larger_size>
 
 - OCI quota and capacity checks were not available in this sample.
 - Re-run after increasing node-pool size to confirm pods schedule.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/update.html
+- https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/

@@ -39,3 +39,9 @@ oci ce node-pool update --node-pool-id <node_pool_ocid> --size <larger_size>
 ## What This Produces
 
 See [sample troubleshooting report](../outputs/oke-troubleshooter/final-report.md).
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/list.html
+- https://kubernetes.io/docs/tasks/debug/debug-application/

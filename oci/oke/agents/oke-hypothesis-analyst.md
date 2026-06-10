@@ -79,3 +79,9 @@ Ensure `hypotheses` contains at least one entry even when all scores are low.
   ```
 
 Complete the analysis in English unless explicitly asked otherwise.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://kubernetes.io/docs/tasks/debug/debug-application/
+- https://kubernetes.io/docs/concepts/cluster-administration/logging/

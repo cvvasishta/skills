@@ -33,3 +33,13 @@ Use this table to map the user's symptom description to diagnostic domains. Star
   - Downstream services called by the target deployment (internal and external).
   - Critical-path dependencies versus optional/background calls.
   - If known, end-to-end p95/p99 baseline and rough per-hop latency budget.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengobservingworkernodeaddonhealth.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringclusteraddons.htm
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm
+- https://kubernetes.io/docs/tasks/debug/debug-application/
+- https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/

@@ -36,3 +36,9 @@ is printed for review; it is not run unless you explicitly choose to run it.
 ## What This Produces
 
 See [sample GVA command output](../outputs/oke-gva-deployer/node-pool-command.sh).
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm
+- https://docs.oracle.com/en-us/iaas/tools/oci-cli/latest/oci_cli_docs/cmdref/ce/node-pool/create.html
+- https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/

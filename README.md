@@ -101,3 +101,8 @@ For stub domains, keep `SKILL.md` minimal and point users back to this `README.m
 - Skills that include version-specific behavior must include a section named `## Oracle Version Notes (19c vs 26ai)`.
 - Use Oracle Database 19c as the baseline compatibility target unless stated otherwise.
 - Explicitly call out features that require newer releases and provide 19c-compatible alternatives where practical.
+
+## Sources
+
+- https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm
+- https://www.graalvm.org/latest/reference-manual/native-image/
